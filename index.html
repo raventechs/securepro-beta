@@ -1,0 +1,2430 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<!-- SecurePro v2.1 — 2026-07-03 — P1+P2+P3+P5 ROBUSTEZ -->
+<title>SecurePro</title>
+<meta name="description" content="Sistema de gestión profesional para empresas de seguridad.">
+<meta name="theme-color" content="#1d4ed8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SecurePro">
+<link rel="manifest" href="/securepro/manifest.json"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --navy:#0f1e3d;--navy3:#1e2f55;
+  --blue:#1d4ed8;--blue-dark:#1338a0;
+  --gold:#f0b84a;--gold2:#c49020;
+  --green:#16a34a;--green-bg:#dcfce7;
+  --warn:#d97706;--warn-bg:#fef3c7;
+  --red:#dc2626;--red-bg:#fee2e2;
+  --bg:#eef0f6;--surface:#ffffff;--surface2:#f4f6fb;
+  --border:#dde1ec;--text:#0f1e3d;--muted:#6b7a99;
+  --shadow:0 2px 8px rgba(15,30,61,.08);
+  --shadow-md:0 4px 20px rgba(15,30,61,.12);
+  --font:'Inter',sans-serif;--radius:12px;--radius-sm:8px;
+}
+[data-theme="dark"]{
+  --bg:#0f172a;--surface:#1e293b;--surface2:#0f172a;
+  --border:#334155;--text:#f1f5f9;--muted:#94a3b8;
+  --shadow:0 2px 8px rgba(0,0,0,.3);--shadow-md:0 4px 20px rgba(0,0,0,.4);
+  --green-bg:#052e16;--warn-bg:#1c1000;--red-bg:#3f0f0f;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+.hidden{display:none!important}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.5;transition:background .2s,color .2s}
+input,select,button,textarea{font-family:var(--font)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes shieldPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.12);opacity:.85}}
+@keyframes camPan{0%,100%{transform:rotate(-22deg)}50%{transform:rotate(22deg)}}
+
+.screen{display:none;min-height:100vh;flex-direction:column}
+.screen.active{display:flex}
+#screen-login.active{align-items:center;justify-content:center;background:linear-gradient(145deg,var(--navy) 0%,#1a3060 100%);padding:24px}
+#screen-admin.active{flex-direction:column;background:var(--bg)}
+
+.auth-card{background:var(--surface);border-radius:20px;padding:40px 36px;width:100%;max-width:380px;box-shadow:0 32px 80px rgba(0,0,0,.3);animation:fadeUp .4s ease both}
+.brand-row{display:flex;align-items:center;gap:12px;margin-bottom:32px}
+.brand-icon{width:44px;height:44px;background:var(--navy);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;user-select:none;flex-shrink:0}
+.brand-name{font-size:22px;font-weight:800;color:var(--navy)}
+.brand-name span{color:var(--gold)}
+.auth-title{font-size:24px;font-weight:800;color:var(--navy);margin-bottom:6px}
+.auth-sub{font-size:14px;color:var(--muted);margin-bottom:28px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px}
+.field input,.field select,.field textarea{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;color:var(--text);font-size:15px;outline:none;transition:border-color .2s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blue)}
+.field input::placeholder,.field textarea::placeholder{color:var(--muted)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.btn-primary{width:100%;padding:14px;background:var(--navy);color:#fff;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 0 var(--navy3);transition:transform .1s,box-shadow .1s;margin-top:6px}
+.btn-primary:active{transform:translateY(2px);box-shadow:0 2px 0 var(--navy3)}
+.btn-primary:disabled{opacity:.5;cursor:default}
+.auth-toggle{text-align:center;font-size:13px;color:var(--muted);margin-top:16px}
+.auth-toggle span{color:var(--blue);cursor:pointer;font-weight:600}
+.auth-err{background:var(--red-bg);color:var(--red);border:1px solid #fca5a5;border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;margin-bottom:14px;display:none}
+.auth-err.show{display:block}
+
+.app-header{background:var(--navy);padding:0 20px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;transition:background .2s}
+[data-theme="dark"] .app-header{background:#080f1e}
+.app-header-brand{font-size:20px;font-weight:800;color:#fff;cursor:pointer;user-select:none;letter-spacing:-.3px}
+.app-header-brand span{color:var(--gold)}
+.app-header-right{display:flex;align-items:center;gap:8px}
+.icon-btn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;width:36px;height:36px;border-radius:var(--radius-sm);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:background .2s}
+.icon-btn:hover{background:rgba(255,255,255,.25)}
+.user-badge{font-size:11px;color:rgba(255,255,255,.6);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.app-nav{background:var(--surface);border-bottom:2px solid var(--border);display:flex;overflow-x:auto;scrollbar-width:none;position:sticky;top:58px;z-index:99;transition:background .2s}
+.app-nav::-webkit-scrollbar{display:none}
+.nav-btn{flex-shrink:0;padding:12px 16px;border:none;background:none;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;white-space:nowrap}
+.nav-btn.active{color:var(--blue);border-bottom-color:var(--blue)}
+
+.app-main{flex:1;overflow-y:auto;padding-bottom:80px}
+.section{padding:20px;display:none;animation:fadeUp .3s ease both}
+.section.active{display:block}
+
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center;box-shadow:var(--shadow)}
+.stat-num{font-size:28px;font-weight:800;color:var(--navy);line-height:1;margin-bottom:4px}
+[data-theme="dark"] .stat-num{color:var(--gold)}
+.stat-label{font-size:12px;color:var(--muted);font-weight:500}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin-bottom:16px;box-shadow:var(--shadow)}
+.card-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:14px}
+.sec-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.sec-title{font-size:17px;font-weight:800;color:var(--text)}
+
+.btn-sm{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-weight:600;color:var(--text);cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-sm:hover{background:var(--surface2);border-color:var(--blue)}
+.btn-sm.primary{background:var(--navy);color:#fff;border-color:var(--navy);box-shadow:0 3px 0 var(--navy3)}
+.btn-sm.gold{background:var(--gold);color:var(--navy);border-color:var(--gold);box-shadow:0 3px 0 var(--gold2)}
+.btn-sm.danger{background:var(--red-bg);color:var(--red);border-color:#fca5a5}
+.btn-sm.success{background:var(--green-bg);color:var(--green);border-color:#86efac}
+
+.search-wrap{position:relative;margin-bottom:16px}
+.search-wrap input{width:100%;padding:11px 14px 11px 40px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;color:var(--text);background:var(--surface);outline:none}
+.search-wrap input:focus{border-color:var(--blue)}
+.search-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:15px}
+
+.client-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow);display:flex;gap:12px;align-items:flex-start;cursor:pointer;transition:box-shadow .2s,transform .15s}
+.client-card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.client-av{width:42px;height:42px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#fff;flex-shrink:0}
+.client-info{flex:1;min-width:0}
+.client-name{font-size:15px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.client-addr{font-size:12px;color:var(--muted);margin-top:2px}
+.client-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.tag{font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
+.tag.cam{background:#dbeafe;color:var(--blue);border-color:#bfdbfe}
+.tag.alarm{background:var(--warn-bg);color:var(--warn);border-color:#fcd34d}
+.tag.cerco{background:var(--red-bg);color:var(--red);border-color:#fca5a5}
+.tag.acceso{background:var(--green-bg);color:var(--green);border-color:#86efac}
+.client-actions{display:flex;gap:6px;flex-shrink:0}
+
+.presup-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;cursor:pointer;transition:box-shadow .2s}
+.presup-card:hover{box-shadow:var(--shadow-md)}
+.presup-icon{width:42px;height:42px;border-radius:var(--radius-sm);background:#dbeafe;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.presup-info{flex:1}
+.presup-client{font-size:15px;font-weight:700;color:var(--text)}
+.presup-date{font-size:12px;color:var(--muted);margin-top:2px}
+.presup-total{font-size:17px;font-weight:800;color:var(--navy);white-space:nowrap}
+[data-theme="dark"] .presup-total{color:var(--gold)}
+.presup-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px;background:var(--green-bg);color:var(--green);margin-top:4px;display:inline-block}
+
+.prod-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:8px;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.prod-name{font-size:14px;font-weight:700;color:var(--text)}
+.prod-desc{font-size:12px;color:var(--muted);margin-top:2px}
+.prod-price{font-size:17px;font-weight:800;color:var(--navy);flex-shrink:0}
+[data-theme="dark"] .prod-price{color:var(--gold)}
+.prod-actions{display:flex;gap:6px;flex-shrink:0}
+.type-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 6px}
+
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.cal-month-title{font-size:16px;font-weight:700;color:var(--text)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-day-header{text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding:4px 0}
+.cal-day{min-height:44px;border-radius:var(--radius-sm);background:var(--surface2);border:1px solid var(--border);padding:4px;cursor:pointer;transition:background .15s;position:relative}
+.cal-day:hover{background:var(--border)}
+.cal-day.today{border-color:var(--blue);background:#eff6ff}
+[data-theme="dark"] .cal-day.today{background:#1e3a5f}
+.cal-day.other-month{opacity:.35}
+.cal-day-num{font-size:12px;font-weight:600;color:var(--text)}
+.cal-dot{width:5px;height:5px;border-radius:50%;background:var(--blue);position:absolute;bottom:4px;right:4px}
+.event-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:8px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px}
+.event-date-box{width:46px;text-align:center;background:var(--navy);border-radius:8px;padding:6px 4px;flex-shrink:0}
+[data-theme="dark"] .event-date-box{background:#080f1e}
+.event-day{font-size:18px;font-weight:800;color:#fff;line-height:1}
+.event-month{font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase}
+.event-info{flex:1}
+.event-title{font-size:14px;font-weight:700;color:var(--text)}
+.event-client{font-size:12px;color:var(--muted);margin-top:2px}
+
+.presup-item-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)}
+.presup-item-row:last-child{border-bottom:none}
+.presup-item-name{font-size:14px;font-weight:700;color:var(--text)}
+.presup-item-desc{font-size:12px;color:var(--muted);margin-top:2px}
+.presup-item-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.qty-row{display:flex;align-items:center;gap:6px}
+.qty-btn{width:26px;height:26px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text)}
+.qty-val{font-size:14px;font-weight:700;color:var(--text);min-width:20px;text-align:center}
+.adj-select{font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text)}
+.item-price{font-size:15px;font-weight:800;color:var(--text)}
+.item-price-orig{font-size:11px;color:var(--muted);text-decoration:line-through}
+.adj-badge{font-size:10px;font-weight:700;background:var(--green-bg);color:var(--green);padding:2px 6px;border-radius:99px}
+.presup-total-box{background:var(--surface2);border-radius:var(--radius-sm);padding:14px;margin-top:12px}
+.presup-total-row{display:flex;justify-content:space-between;align-items:center;font-size:14px;margin-bottom:6px}
+.presup-total-row:last-child{margin-bottom:0}
+.presup-grand-total-val{font-size:24px;font-weight:800;color:var(--navy)}
+[data-theme="dark"] .presup-grand-total-val{color:var(--gold)}
+.product-search-wrap{position:relative}
+.prod-dropdown{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);z-index:200;max-height:240px;overflow-y:auto;box-shadow:var(--shadow-md);display:none}
+.prod-option{padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s}
+.prod-option:hover{background:var(--surface2)}
+.prod-option:last-child{border-bottom:none}
+.prod-option-name{font-size:14px;font-weight:700;color:var(--text)}
+.prod-option-desc{font-size:11px;color:var(--muted);margin-top:1px}
+.prod-option-price{font-size:13px;font-weight:700;color:var(--blue);margin-top:3px}
+.total-adj-row{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;justify-content:center;z-index:500}
+.modal-overlay.open{display:flex}
+@media(min-width:600px){.modal-overlay{align-items:center}}
+.modal{background:var(--surface);border-radius:20px 20px 0 0;padding:24px 20px 40px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto}
+@media(min-width:600px){.modal{border-radius:20px}}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.modal-title{font-size:17px;font-weight:800;color:var(--text)}
+.modal-close-btn{width:32px;height:32px;background:var(--surface2);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--muted);border:none}
+.modal-footer{display:flex;gap:10px;margin-top:20px;justify-content:flex-end}
+.btn-cancel{padding:10px 18px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-weight:600;color:var(--muted);cursor:pointer}
+.btn-save{padding:10px 20px;background:var(--navy);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 3px 0 var(--navy3)}
+.btn-save:disabled{opacity:.5;cursor:default}
+.check-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;margin-bottom:8px;transition:all .2s}
+.check-row.checked{border-color:var(--blue);background:#eff6ff}
+[data-theme="dark"] .check-row.checked{background:#1e3a5f}
+.check-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--blue);cursor:pointer}
+.check-row label{font-size:14px;font-weight:600;color:var(--text);cursor:pointer}
+
+.header-empresa{display:flex;align-items:center;gap:8px;}
+.header-empresa-logo{width:32px;height:32px;border-radius:6px;object-fit:contain;background:#fff;padding:2px;flex-shrink:0;}
+.header-empresa-nombre{font-size:14px;font-weight:700;color:rgba(255,255,255,.9);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.config-logo-wrap{display:flex;align-items:center;gap:14px;margin-bottom:14px;}
+.config-logo-preview{width:72px;height:72px;border-radius:var(--radius-sm);border:2px dashed var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;overflow:hidden;}
+.config-logo-preview img{width:100%;height:100%;object-fit:contain;}
+.btn-logo-upload{background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:8px 14px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;}
+.presup-empresa-header{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:2px solid var(--border);margin-bottom:14px;}
+.presup-empresa-logo{width:48px;height:48px;border-radius:6px;object-fit:contain;flex-shrink:0;}
+.presup-empresa-datos{flex:1;}
+.presup-empresa-nombre{font-size:16px;font-weight:800;color:var(--text);}
+.presup-empresa-sub{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4;}
+
+.seguimiento-header{display:flex;align-items:center;justify-content:space-between;margin:16px 0 10px;}
+.seguimiento-title{font-size:14px;font-weight:700;color:var(--text);}
+.btn-add-seg{background:var(--blue);color:#fff;border:none;border-radius:50%;width:28px;height:28px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.seg-item{background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start;}
+.seg-item.completado{opacity:.55;}
+.seg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.seg-dot.pendiente{background:var(--warn);}
+.seg-dot.completado{background:var(--green);}
+.seg-dot.vencido{background:var(--red);}
+.seg-body{flex:1;min-width:0;}
+.seg-tipo{font-size:12px;font-weight:700;color:var(--text);}
+.seg-fecha{font-size:11px;color:var(--muted);margin-top:2px;}
+.seg-notas{font-size:12px;color:var(--muted);margin-top:3px;}
+.seg-actions{display:flex;gap:5px;flex-shrink:0;}
+.seg-btn{background:none;border:1.5px solid var(--border);border-radius:6px;padding:3px 7px;font-size:11px;cursor:pointer;color:var(--muted);}
+.seg-btn:hover{border-color:var(--blue);color:var(--blue);}
+.seg-btn.ok{border-color:var(--green);color:var(--green);}
+
+.ficha-tags{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 14px;}
+.ficha-dato{font-size:13px;color:var(--muted);margin-bottom:5px;}
+.ficha-dato strong{color:var(--text);}
+
+.dash-seg-item{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);}
+.dash-seg-item:last-child{border-bottom:none;}
+.dash-seg-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap;flex-shrink:0;margin-top:2px;}
+.dash-seg-badge.hoy{background:#dbeafe;color:var(--blue);border:1px solid #bfdbfe;}
+.dash-seg-badge.proximo{background:var(--warn-bg);color:var(--warn);border:1px solid #fcd34d;}
+.dash-seg-badge.vencido{background:var(--red-bg);color:var(--red);border:1px solid #fca5a5;}
+.check-row label{font-size:14px;font-weight:600;color:var(--text);cursor:pointer}
+.det-panel{display:none;background:var(--surface2);border:1.5px solid var(--blue);border-top:none;border-radius:0 0 8px 8px;padding:12px 14px;margin-top:-10px;margin-bottom:8px;}
+.det-panel .field{margin-bottom:8px;}
+.det-panel .field label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
+.det-panel input,.det-panel select,.det-panel textarea{width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;font-family:var(--font);background:var(--surface);color:var(--text);}
+.det-panel textarea{resize:vertical;}
+.mini-check{display:flex;align-items:center;gap:5px;font-size:13px;font-weight:500;color:var(--text);cursor:pointer;padding:4px 8px;background:var(--surface);border:1.5px solid var(--border);border-radius:6px;}
+.mini-check input{width:14px;height:14px;accent-color:var(--blue);cursor:pointer;}
+.tab-bar{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:16px}
+.tab-btn{padding:10px 18px;border:none;background:none;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s}
+.tab-btn.active{color:var(--blue);border-bottom-color:var(--blue)}
+.dynamic-fields{background:var(--bg);border-radius:10px;padding:12px;margin-top:4px;border:1px solid var(--border)}
+
+.view-presup-item{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:14px}
+.view-presup-item:last-child{border-bottom:none}
+
+#pdf-overlay{display:none;position:fixed;inset:0;background:#fff;z-index:9000;overflow-y:auto;padding:20px}
+[data-theme="dark"] #pdf-overlay{background:#1e293b}
+.pdf-actions{display:flex;gap:10px;margin-bottom:20px;justify-content:flex-end}
+
+.admin-header{background:#7c3aed;padding:14px 20px;display:flex;align-items:center;justify-content:space-between}
+.admin-header-title{font-size:18px;font-weight:800;color:#fff}
+.admin-badge{background:rgba(255,255,255,.2);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:10px}
+.btn-admin-exit{background:none;border:2px solid rgba(255,255,255,.4);color:#fff;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)}
+.admin-tabs{background:#6d28d9;display:flex}
+.admin-tab{flex:1;padding:12px 4px;text-align:center;font-size:12px;font-weight:600;color:rgba(255,255,255,.6);cursor:pointer;border-bottom:3px solid transparent;transition:all .2s}
+.admin-tab.active{color:#fff;border-bottom-color:var(--gold)}
+.admin-body{flex:1;overflow-y:auto;padding:16px;background:var(--bg)}
+.admin-section-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:12px}
+.admin-card{background:var(--surface);border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:var(--shadow);border:1px solid var(--border)}
+.admin-card-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:2px}
+.admin-card-sub{font-size:12px;color:var(--muted);margin-bottom:10px}
+.admin-card-actions{display:flex;gap:8px}
+.btn-adel{flex:1;padding:8px;background:var(--red-bg);border:1.5px solid #fecaca;border-radius:8px;color:var(--red);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font)}
+.btn-aban{flex:1;padding:8px;background:var(--red-bg);border:1.5px solid #fecaca;border-radius:8px;color:var(--red);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font)}
+.btn-aunban{flex:1;padding:8px;background:var(--green-bg);border:1.5px solid #86efac;border-radius:8px;color:var(--green);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font)}
+.ban-badge{font-size:10px;font-weight:700;background:var(--red);color:#fff;padding:2px 6px;border-radius:6px;margin-left:6px}
+
+.pin-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;justify-content:center;z-index:9999}
+.pin-overlay.open{display:flex}
+@media(min-width:600px){.pin-overlay{align-items:center}}
+.pin-modal{background:var(--surface);border-radius:20px 20px 0 0;padding:28px 24px 40px;width:100%;max-width:360px}
+@media(min-width:600px){.pin-modal{border-radius:20px}}
+.pin-modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.pin-modal-title{font-size:17px;font-weight:800;color:var(--text)}
+.pin-close-btn{width:32px;height:32px;background:var(--surface2);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--muted);border:none}
+.pin-sub{font-size:13px;color:var(--muted);text-align:center;margin-bottom:16px}
+.pin-dots{display:flex;gap:10px;justify-content:center;margin-bottom:20px}
+.pin-dot{width:16px;height:16px;border-radius:50%;background:var(--border);transition:background .2s}
+.pin-dot.filled{background:var(--blue)}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.pin-btn{padding:16px;background:var(--surface2);border:2px solid var(--border);border-radius:12px;font-size:20px;font-weight:700;color:var(--text);cursor:pointer;font-family:var(--font);transition:all .2s}
+.pin-btn:active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.pin-err{color:var(--red);font-size:13px;font-weight:600;text-align:center;margin-top:10px;display:none}
+
+.empty{text-align:center;padding:48px 24px;color:var(--muted)}
+.empty-icon{font-size:48px;margin-bottom:12px}
+.empty-msg{font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px}
+.empty-sub{font-size:14px}
+.loading-wrap{display:flex;justify-content:center;padding:40px}
+.spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite}
+
+.fab{position:fixed;bottom:24px;right:20px;width:56px;height:56px;background:var(--gold);border:none;border-radius:16px;font-size:28px;cursor:pointer;box-shadow:0 4px 0 var(--gold2),0 8px 24px rgba(240,184,74,.4);transition:transform .1s,box-shadow .1s;z-index:200;display:flex;align-items:center;justify-content:center;color:var(--navy)}
+.fab:active{transform:translateY(2px);box-shadow:0 2px 0 var(--gold2)}
+
+#toast-wrap{position:fixed;bottom:24px;right:80px;display:flex;flex-direction:column;gap:8px;z-index:9998}
+.toast{background:var(--navy);color:#fff;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:var(--shadow-md);animation:fadeUp .3s ease both}
+[data-theme="dark"] .toast{background:#1e293b;border:1px solid var(--border)}
+.toast.err{background:var(--red)}
+.toast.ok{background:var(--green)}
+
+@media(max-width:600px){
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .field-row{grid-template-columns:1fr}
+  .client-actions{flex-direction:column}
+}
+
+#demo-wall{position:fixed;inset:0;background:linear-gradient(145deg,var(--navy),#1a3060);display:none;align-items:center;justify-content:center;z-index:9990;padding:24px}
+#demo-wall.open{display:flex}
+.demo-card{background:var(--surface);border-radius:20px;padding:36px 28px;width:100%;max-width:380px;text-align:center;box-shadow:0 32px 80px rgba(0,0,0,.4);animation:fadeUp .4s ease both}
+.demo-icon{font-size:56px;margin-bottom:16px}
+.demo-title{font-size:22px;font-weight:800;color:var(--text);margin-bottom:8px}
+.demo-sub{font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:24px}
+.btn-demo-email{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:14px;background:var(--navy);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;text-decoration:none;margin-bottom:10px;font-family:var(--font)}
+.btn-demo-email:hover{background:var(--navy3)}
+.btn-demo-logout{font-size:13px;color:var(--muted);cursor:pointer;text-decoration:underline;background:none;border:none;font-family:var(--font);margin-top:4px}
+.demo-countdown{font-size:11px;font-weight:700;background:rgba(240,184,74,.25);color:var(--gold);padding:4px 10px;border-radius:99px;margin-left:6px}
+.demo-countdown.urgente{background:rgba(220,38,38,.25);color:#fca5a5}
+.btn-aext{flex:1;padding:8px;background:#dbeafe;border:1.5px solid #93c5fd;border-radius:8px;color:var(--blue);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font)}
+.btn-aact{flex:1;padding:8px;background:var(--green-bg);border:1.5px solid #86efac;border-radius:8px;color:var(--green);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font)}
+.demo-badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px;margin-left:6px}
+.demo-badge.activa{background:var(--warn-bg);color:var(--warn)}
+.demo-badge.vencida{background:var(--red-bg);color:var(--red)}
+.demo-badge.completa{background:var(--green-bg);color:var(--green)}
+
+.invite-card{max-width:380px}
+.invite-card-icon{font-size:44px;margin-bottom:10px}
+.invite-card-negocio{font-size:20px;font-weight:800;color:var(--navy);margin-bottom:6px}
+[data-theme="dark"] .invite-card-negocio{color:var(--gold)}
+.invite-card-sub{font-size:14px;color:var(--muted);margin-bottom:18px;line-height:1.5}
+.invite-card-badge{display:inline-flex;align-items:center;gap:6px;background:var(--green-bg);color:var(--green);border:1px solid #86efac;border-radius:99px;padding:4px 12px;font-size:12px;font-weight:700;margin-bottom:18px}
+.invite-expired{background:var(--red-bg);border:1px solid #fca5a5;border-radius:var(--radius);padding:14px;color:var(--red);font-size:14px;font-weight:600;margin-bottom:16px}
+
+.invite-section{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;margin-bottom:16px}
+.invite-section-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.invite-row{display:flex;gap:8px;margin-bottom:8px}
+.invite-link-box{flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:11px;color:var(--muted);font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn-copy-link{background:var(--navy);color:#fff;border:none;border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.btn-wa-invite{background:#25d366;color:#fff;border:none;border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;width:100%}
+.invite-expiry{font-size:11px;color:var(--muted);text-align:center;margin-top:6px}
+.equipo-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px}
+.equipo-av{width:38px;height:38px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex-shrink:0}
+.equipo-info{flex:1;min-width:0}
+.equipo-email{font-size:14px;font-weight:700;color:var(--text)}
+.equipo-rol{font-size:12px;color:var(--muted);margin-top:2px}
+.equipo-badge{font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px}
+.equipo-badge.pendiente{background:var(--warn-bg);color:var(--warn)}
+.equipo-badge.activo{background:var(--green-bg);color:var(--green)}
+.equipo-actions{display:flex;gap:6px;flex-shrink:0}
+
+body.role-readonly .main-fab,
+body.role-readonly #btn-new-client,
+body.role-readonly #btn-new-presup,
+body.role-readonly #btn-new-prod,
+body.role-readonly #btn-new-event,
+body.role-readonly .btn-del-client,
+body.role-readonly #btn-del-presup,
+body.role-readonly #btn-edit-presup,
+body.role-readonly #btn-ficha-edit,
+body.role-readonly #btn-add-seg,
+body.role-readonly .seg-actions button[data-action]{display:none!important}
+body.role-viewer .btn-edit-client{display:none!important}
+</style>
+</head>
+<body>
+<div id="offlineBanner" style="display:none;background:#7c3200;color:#ffd9b3;font-size:0.8rem;font-weight:600;text-align:center;padding:6px 12px;">Sin conexion - registros guardados localmente</div>
+
+<!-- LOGIN -->
+<!-- LOADING -->
+<div id="screen-loading" class="screen active" style="align-items:center;justify-content:center;background:linear-gradient(145deg,var(--navy),#1a3060)">
+  <div style="text-align:center">
+    <div style="font-size:44px;margin-bottom:16px;animation:shieldPulse 1.3s ease-in-out infinite">🛡️</div>
+    <div style="font-size:20px;font-weight:800;color:#fff;margin-bottom:8px">Secure<span style="color:var(--gold)">Pro</span></div>
+    <div style="width:32px;height:32px;border:3px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;margin:16px auto 0"></div>
+  </div>
+</div>
+
+<div id="screen-login" class="screen">
+  <div class="auth-card">
+    <div class="brand-row">
+      <div class="brand-icon" id="login-logo">🔒</div>
+      <div class="brand-name">Secure<span>Pro</span></div>
+    </div>
+    <div class="auth-title" id="auth-title">Bienvenido</div>
+    <div class="auth-sub">Sistema de gestión de clientes de seguridad</div>
+        <button class="btn-primary" id="btn-google" style="background:#fff;color:#0f1e3d;border:2px solid #dde1ec;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/><path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2.04a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z"/><path fill="#FBBC05" d="M4.5 10.48A4.8 4.8 0 0 1 4.5 7.5V5.43H1.83a8 8 0 0 0 0 7.14l2.67-2.09z"/><path fill="#EA4335" d="M8.98 3.58c1.32 0 2.5.45 3.44 1.35l2.54-2.54A8 8 0 0 0 1.83 5.43L4.5 7.5c.66-1.97 2.49-3.92 4.48-3.92z"/></svg>
+      Continuar con Google
+    </button>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px"><div style="flex:1;height:1px;background:var(--border)"></div><span style="font-size:12px;color:var(--muted);font-weight:600">o ingresá con email</span><div style="flex:1;height:1px;background:var(--border)"></div></div>
+    <div class="auth-err" id="auth-err"></div>
+    <div class="field"><label>Email</label><input id="f-email" type="email" placeholder="tu@email.com"/></div>
+    <div class="field"><label>Contraseña</label><input id="f-pass" type="password" placeholder="••••••••"/></div>
+    <button class="btn-primary" id="btn-auth">Ingresar →</button>
+    <div class="auth-toggle"><span id="toggle-mode">Registrarse</span></div>
+  </div>
+</div>
+
+<!-- INVITACIÓN -->
+<div id="screen-invite" class="screen">
+  <div class="auth-card invite-card">
+    <div class="invite-card-icon" id="invite-neg-icon">🔒</div>
+    <div class="invite-card-negocio" id="invite-neg-nombre">Cargando...</div>
+    <div class="invite-card-sub" id="invite-neg-sub">Fuiste invitado a unirte como técnico</div>
+    <div id="invite-expired-msg" style="display:none" class="invite-expired">⏰ Este link ya expiró. Pedile al administrador que genere uno nuevo.</div>
+
+    <!-- Caso 1: ya está logueado — un solo botón -->
+    <div id="invite-already-logged" style="display:none">
+      <div class="invite-card-badge" id="invite-role-badge-logged">✅ Invitación válida</div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:14px;font-size:13px;color:var(--muted)">
+        Vas a unirte como: <strong id="invite-current-email" style="color:var(--text)"></strong>
+      </div>
+      <button class="btn-primary" id="btn-inv-join">Unirme al equipo →</button>
+    </div>
+
+    <!-- Caso 2: no está logueado — login/registro completo -->
+    <div id="invite-valid-wrap">
+      <div class="invite-card-badge" id="invite-role-badge">✅ Invitación válida</div>
+      <button class="btn-primary" id="btn-inv-google" style="background:#fff;color:#0f1e3d;border:2px solid #dde1ec;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px">
+        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/><path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2.04a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z"/><path fill="#FBBC05" d="M4.5 10.48A4.8 4.8 0 0 1 4.5 7.5V5.43H1.83a8 8 0 0 0 0 7.14l2.67-2.09z"/><path fill="#EA4335" d="M8.98 3.58c1.32 0 2.5.45 3.44 1.35l2.54-2.54A8 8 0 0 0 1.83 5.43L4.5 7.5c.66-1.97 2.49-3.92 4.48-3.92z"/></svg>
+        Continuar con Google
+      </button>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><div style="flex:1;height:1px;background:var(--border)"></div><span style="font-size:12px;color:var(--muted);font-weight:600">o con email</span><div style="flex:1;height:1px;background:var(--border)"></div></div>
+      <div class="field" style="text-align:left"><label>Email</label><input id="inv-email" type="email" placeholder="tu@email.com"/></div>
+      <div class="field" style="text-align:left"><label>Contraseña</label><input id="inv-pass" type="password" placeholder="Mínimo 6 caracteres"/></div>
+      <div class="auth-err" id="inv-err"></div>
+      <button class="btn-primary" id="btn-inv-register">Registrarme y unirme →</button>
+      <div class="auth-toggle" style="margin-top:10px">¿Ya tenés cuenta? <span id="inv-toggle-login" style="color:var(--blue);cursor:pointer;font-weight:600">Iniciá sesión</span></div>
+      <div id="inv-login-wrap" style="display:none">
+        <button class="btn-primary" id="btn-inv-login" style="margin-top:8px;background:var(--surface2);color:var(--text);border:1.5px solid var(--border);box-shadow:none">Ingresar y unirme →</button>
+      </div>
+    </div>
+
+    <button class="btn-demo-logout" style="margin-top:14px" id="btn-inv-cancel">Cancelar</button>
+  </div>
+</div>
+
+<!-- PENDIENTE DE APROBACIÓN -->
+<div id="screen-pending" class="screen">
+  <div class="auth-card" style="text-align:center">
+    <div style="font-size:48px;margin-bottom:16px">⏳</div>
+    <div class="auth-title">Esperando aprobación</div>
+    <div class="auth-sub" style="margin-bottom:24px">El administrador todavía no aprobó tu acceso al equipo. Una vez que lo haga, vas a poder entrar normalmente.</div>
+    <button class="btn-demo-logout" id="btn-pending-logout">Cerrar sesión</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="screen-app" class="screen">
+  <div class="app-header">
+    <div class="app-header-brand" id="app-logo">Secure<span>Pro</span></div>
+    <div style="width:22px;height:22px;display:flex;align-items:center;justify-content:center;transform-origin:50% 85%;animation:camPan 2.6s ease-in-out infinite" title="Vigilancia activa">📹</div>
+    <div id="header-empresa-wrap" style="display:none"></div>
+    <div class="app-header-right" id="app-header-right">
+      <span class="user-badge" id="user-badge"></span>
+      <button class="icon-btn" id="btn-theme">🌙</button>
+      <button class="icon-btn" id="btn-logout" title="Salir">⏻</button>
+    </div>
+  </div>
+  <nav class="app-nav">
+    <button class="nav-btn active" data-section="dashboard">🏠 Inicio</button>
+    <button class="nav-btn" data-section="clientes">👤 Clientes</button>
+    <button class="nav-btn" data-section="presupuestos">💰 Presupuestos</button>
+    <button class="nav-btn" data-section="catalogo">📦 Catálogo</button>
+    <button class="nav-btn" data-section="calendario">📅 Agenda</button>
+    <button class="nav-btn" id="nav-equipo" data-section="equipo" style="display:none">👥 Equipo</button>
+    <button class="nav-btn" data-section="configuracion">⚙️ Config</button>
+  </nav>
+  <div class="app-main">
+    <div class="section active" id="section-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-num" id="stat-total">0</div><div class="stat-label">Clientes totales</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-cam">0</div><div class="stat-label">Con cámaras</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-alarm">0</div><div class="stat-label">Con alarma</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-eventos">0</div><div class="stat-label">Eventos este mes</div></div>
+      </div>
+      <div class="card"><div class="card-title">📋 Seguimiento próximo</div><div id="dash-seguimiento"></div></div>
+      <div class="card"><div class="card-title">📅 Próximos eventos</div><div id="dash-events"></div></div>
+      <div class="card"><div class="card-title">💰 Últimos presupuestos</div><div id="dash-presup"></div></div>
+      <div class="card"><div class="card-title">👤 Últimos clientes</div><div id="dash-clients"></div></div>
+    </div>
+    <div class="section" id="section-clientes">
+      <div class="sec-header"><span class="sec-title">Clientes</span><button class="btn-sm primary" id="btn-new-client">＋ Nuevo</button></div>
+      <div class="search-wrap"><span class="search-icon">🔍</span><input type="text" id="search-clients" placeholder="Buscar por nombre, dirección..."/></div>
+      <button onclick="exportarCSV()" style="background:var(--gold);color:#000;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:12px;width:100%">⬇️ Exportar clientes CSV</button>
+      <div id="client-list"></div>
+    </div>
+    <div class="section" id="section-presupuestos">
+      <div class="sec-header"><span class="sec-title">Presupuestos</span><button class="btn-sm primary" id="btn-new-presup">＋ Nuevo</button></div>
+      <div class="search-wrap"><span class="search-icon">🔍</span><input type="text" id="search-presup" placeholder="Buscar por cliente..."/></div>
+      <div id="presup-list"></div>
+    </div>
+    <div class="section" id="section-catalogo">
+      <div class="sec-header"><span class="sec-title">Catálogo de productos</span><button class="btn-sm primary" id="btn-new-prod">＋ Nuevo</button></div>
+      <div class="search-wrap"><span class="search-icon">🔍</span><input type="text" id="search-prod" placeholder="Buscar producto..."/></div>
+      <div id="catalogo-list"></div>
+    </div>
+    <div class="section" id="section-calendario">
+      <div class="card">
+        <div class="cal-header">
+          <button class="btn-sm" id="btn-cal-prev">◀</button>
+          <div class="cal-month-title" id="cal-title"></div>
+          <button class="btn-sm" id="btn-cal-next">▶</button>
+        </div>
+        <div style="display:flex;gap:14px;margin-bottom:10px;font-size:11px;color:var(--muted);font-weight:600">
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--gold);margin-right:4px;vertical-align:middle"></span>Evento</span>
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--warn);margin-right:4px;vertical-align:middle"></span>Seguimiento</span>
+        </div>
+        <div class="cal-grid" id="cal-headers"></div>
+        <div class="cal-grid" id="cal-grid" style="margin-top:4px"></div>
+      </div>
+      <div class="sec-header" style="margin-top:4px"><span class="sec-title">Todos los eventos</span><button class="btn-sm primary" id="btn-new-event">＋ Evento</button></div>
+      <div id="events-list"></div>
+    </div>
+    <div class="section" id="section-equipo">
+      <div class="sec-header"><span class="sec-title">Equipo</span></div>
+      <div class="invite-section">
+        <div class="invite-section-title">🔗 Invitar técnico</div>
+        <div class="field"><label>Rol del invitado</label>
+          <select id="invite-role-select" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;color:var(--text);font-size:15px;outline:none">
+            <option value="editor">✏️ Editor — puede ver y editar, no puede borrar</option>
+            <option value="viewer">👁 Viewer — solo puede ver</option>
+          </select>
+        </div>
+        <div id="invite-wrap">
+          <button class="btn-primary" style="margin-bottom:0" id="btn-gen-invite">Generar link de invitación</button>
+        </div>
+      </div>
+      <div id="equipo-pendientes"></div>
+      <div id="equipo-activos"></div>
+    </div>
+    <div class="section" id="section-configuracion">
+      <div class="sec-header"><div class="sec-title">Mi Empresa</div></div>
+      <div class="card">
+        <div class="card-title">Backup de datos</div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Se genera automaticamente una vez por dia. Incluye clientes, presupuestos, eventos, productos y configuracion.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+          <button class="btn-save" style="padding:8px 14px;font-size:13px;" onclick="generarBackup(false)">Descargar backup</button>
+          <button class="btn-sm" style="padding:8px 14px;font-size:13px;" onclick="document.getElementById('inputRestaurar').click()">Restaurar backup</button>
+        </div>
+        <input type="file" id="inputRestaurar" accept=".json" style="display:none;" onchange="restaurarBackup(this)">
+        <p style="font-size:11px;color:var(--muted);">Ultimo backup: <span id="ultimoBackupFecha">-</span></p>
+      </div>
+      <div class="card">
+        <div class="config-logo-wrap">
+          <div class="config-logo-preview" id="logo-preview">🏢</div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px">Logo de la empresa</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Aparece en el header y en los presupuestos PDF</div>
+            <label class="btn-logo-upload" for="logo-file-input">📁 Subir logo</label>
+            <input type="file" id="logo-file-input" accept="image/*" style="display:none"/>
+            <button class="btn-sm danger" id="btn-remove-logo" style="margin-left:8px;display:none">✕ Quitar</button>
+          </div>
+        </div>
+        <div class="field"><label>Nombre de la empresa *</label><input id="emp-nombre" placeholder="Seguridad del Norte S.R.L."/></div>
+        <div class="field"><label>Dirección</label><input id="emp-direccion" placeholder="Av. San Martín 1234, Buenos Aires"/></div>
+        <div class="field-row">
+          <div class="field"><label>Teléfono</label><input id="emp-telefono" placeholder="11-4444-5555"/></div>
+          <div class="field"><label>Email</label><input id="emp-email" type="email" placeholder="info@miempresa.com"/></div>
+        </div>
+        <div style="margin-top:6px"><button class="btn-save" id="save-empresa" style="width:100%">Guardar datos de empresa</button></div>
+      </div>
+      <div class="card" id="preview-empresa-card" style="display:none">
+        <div class="card-title" style="margin-bottom:10px">Vista previa en presupuestos</div>
+        <div id="preview-empresa-content"></div>
+      </div>
+    </div>
+  </div>
+  <div id="offlineBadgeBox" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#2a1800;border:1px solid #e67e22;border-radius:8px;padding:8px 16px;font-size:0.8rem;z-index:100;">Registros pendientes: <strong id="offlineBadgeCount">0</strong></div>
+  <button class="fab" id="main-fab">＋</button>
+</div>
+
+<!-- ADMIN -->
+<div id="screen-admin" class="screen">
+  <div class="admin-header">
+    <div class="admin-header-title">⚡ Panel Admin</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="admin-badge">SUPER USUARIO</span>
+      <button class="btn-admin-exit" id="btn-admin-exit">Salir</button>
+    </div>
+  </div>
+  <div class="admin-tabs">
+    <div class="admin-tab active" id="atab-users">👥 Usuarios</div>
+    <div class="admin-tab" id="atab-clients">👤 Clientes</div>
+  </div>
+  <div class="admin-body">
+    <div id="admin-users-view"><p class="admin-section-title">Todos los usuarios</p><div id="admin-users-list"><div class="loading-wrap"><div class="spinner"></div></div></div></div>
+    <div id="admin-clients-view" style="display:none"><p class="admin-section-title">Todos los clientes</p><div id="admin-clients-list"><div class="loading-wrap"><div class="spinner"></div></div></div></div>
+  </div>
+</div>
+
+<!-- MODALES -->
+<!-- Cliente -->
+<div class="modal-overlay" id="modal-client">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title" id="modal-client-title">Nuevo cliente</span><button class="modal-close-btn" id="close-client">✕</button></div>
+    <input type="hidden" id="c-id"/>
+    <div class="field"><label>Nombre / Empresa *</label><input id="c-name" placeholder="Juan Pérez"/></div>
+    <div class="field-row">
+      <div class="field"><label>Teléfono</label><input id="c-phone" type="tel" placeholder="11-1234-5678"/></div>
+      <div class="field"><label>Email</label><input id="c-email" type="email" placeholder="cliente@email.com"/></div>
+    </div>
+    <div class="field"><label>Dirección</label><input id="c-addr" placeholder="Av. Rivadavia 1234, CABA"/></div>
+    <div class="field"><label>Instalaciones</label>
+      <div class="check-row" id="chk-camaras"><input type="checkbox" id="cb-cam"/><label for="cb-cam">📷 Cámaras</label></div>
+      <div class="det-panel" id="det-camaras">
+        <div class="field-row">
+          <div class="field"><label>Cantidad de cámaras</label><input id="det-cam-qty" type="number" min="1" placeholder="Ej: 4"/></div>
+          <div class="field"><label>Megapíxeles</label>
+            <select id="det-cam-mp"><option value="">—</option><option>2 MP</option><option>4 MP</option><option>5 MP</option><option>8 MP</option><option>12 MP</option></select>
+          </div>
+        </div>
+        <div class="field"><label>Tipo</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+            <label class="mini-check"><input type="checkbox" id="det-cam-int"/> Interior</label>
+            <label class="mini-check"><input type="checkbox" id="det-cam-ext"/> Exterior</label>
+            <label class="mini-check"><input type="checkbox" id="det-cam-domo"/> Domo</label>
+            <label class="mini-check"><input type="checkbox" id="det-cam-bala"/> Bala</label>
+          </div>
+        </div>
+        <div class="field"><label>Notas de cámaras</label><textarea id="det-cam-notes" rows="2" placeholder="Ej: DVR 8 canales, 50m cable UTP..."></textarea></div>
+      </div>
+
+      <div class="check-row" id="chk-alarma"><input type="checkbox" id="cb-alarm"/><label for="cb-alarm">🔔 Alarma</label></div>
+      <div class="det-panel" id="det-alarma">
+        <div class="field-row">
+          <div class="field"><label>Cantidad de sensores</label><input id="det-alarm-qty" type="number" min="1" placeholder="Ej: 6"/></div>
+          <div class="field"><label>Panel</label>
+            <select id="det-alarm-panel"><option value="">—</option><option>4 zonas</option><option>8 zonas</option><option>16 zonas</option><option>Inalámbrico</option></select>
+          </div>
+        </div>
+        <div class="field"><label>Tipo de sensores</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+            <label class="mini-check"><input type="checkbox" id="det-alarm-mov"/> Movimiento</label>
+            <label class="mini-check"><input type="checkbox" id="det-alarm-aper"/> Apertura</label>
+            <label class="mini-check"><input type="checkbox" id="det-alarm-barr"/> Barrera infrarroja</label>
+          </div>
+        </div>
+        <div class="field"><label>Sirena</label>
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <label class="mini-check"><input type="radio" name="det-alarm-sirena" id="det-alarm-sir-si" value="si"/> Sí</label>
+            <label class="mini-check"><input type="radio" name="det-alarm-sirena" id="det-alarm-sir-no" value="no"/> No</label>
+          </div>
+        </div>
+        <div class="field"><label>Notas de alarma</label><textarea id="det-alarm-notes" rows="2" placeholder="Ej: Comunicador GSM, batería de respaldo..."></textarea></div>
+      </div>
+
+      <div class="check-row" id="chk-cerco"><input type="checkbox" id="cb-cerco"/><label for="cb-cerco">⚡ Cerco eléctrico</label></div>
+      <div class="det-panel" id="det-cerco">
+        <div class="field-row">
+          <div class="field"><label>Metros de cerco</label><input id="det-cerco-metros" type="number" min="1" placeholder="Ej: 80"/></div>
+          <div class="field"><label>Voltaje</label>
+            <select id="det-cerco-voltaje"><option value="">—</option><option>5.000 V</option><option>7.000 V</option><option>10.000 V</option></select>
+          </div>
+        </div>
+        <div class="field"><label>Cantidad de sectores</label><input id="det-cerco-sectores" type="number" min="1" placeholder="Ej: 2"/></div>
+        <div class="field"><label>Notas de cerco</label><textarea id="det-cerco-notes" rows="2" placeholder="Ej: Energizador marca X, alarma integrada..."></textarea></div>
+      </div>
+
+      <div class="check-row" id="chk-acceso"><input type="checkbox" id="cb-access"/><label for="cb-access">🚪 Control de acceso</label></div>
+      <div class="det-panel" id="det-acceso">
+        <div class="field-row">
+          <div class="field"><label>Cantidad de puntos</label><input id="det-acc-qty" type="number" min="1" placeholder="Ej: 2"/></div>
+          <div class="field"><label>Tipo de lector</label>
+            <select id="det-acc-tipo"><option value="">—</option><option>Tarjeta/proximidad</option><option>Huella dactilar</option><option>PIN</option><option>Facial</option></select>
+          </div>
+        </div>
+        <div class="field"><label>Notas de acceso</label><textarea id="det-acc-notes" rows="2" placeholder="Ej: Cerradura magnética, control por app..."></textarea></div>
+      </div>
+    </div>
+    <div class="field"><label>Notas</label><textarea id="c-notes" rows="3" placeholder="Detalles de la instalación..."></textarea></div>
+    <div class="modal-footer"><button class="btn-cancel" id="cancel-client">Cancelar</button><button class="btn-save" id="save-client">Guardar cliente</button></div>
+  </div>
+</div>
+
+<!-- Presupuesto -->
+<div class="modal-overlay" id="modal-presup">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title" id="modal-presup-title">Nuevo presupuesto</span><button class="modal-close-btn" id="close-presup">✕</button></div>
+    <input type="hidden" id="p-id"/>
+    <div class="field"><label>Cliente *</label>
+      <div class="product-search-wrap">
+        <input id="p-client" placeholder="Escribí para buscar cliente..." autocomplete="off"/>
+        <div class="prod-dropdown" id="client-dropdown"></div>
+      </div>
+    </div>
+    <div class="field"><label>Fecha</label><input id="p-date" type="date"/></div>
+    <div class="field">
+      <label>Ítems</label>
+      <div class="product-search-wrap">
+        <input type="text" id="prod-search-input" placeholder="Buscar producto del catálogo..."/>
+        <div class="prod-dropdown" id="prod-dropdown"></div>
+      </div>
+    </div>
+    <div id="presup-items-list" style="margin-top:8px"></div>
+    <div class="total-adj-row">
+      <span style="font-size:13px;font-weight:600;color:var(--muted)">Ajuste general:</span>
+      <select id="total-adj" style="padding:5px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);font-size:13px">
+        <option value="0">Sin ajuste</option><option value="10">+10%</option><option value="20">+20%</option><option value="30">+30%</option>
+      </select>
+      <span class="adj-badge" id="total-adj-badge" style="display:none"></span>
+    </div>
+    <div class="presup-total-box">
+      <div class="presup-total-row"><span style="color:var(--muted)">Subtotal</span><span id="presup-subtotal-val">$0</span></div>
+      <div class="presup-total-row"><span style="font-size:15px;font-weight:700">TOTAL</span><span class="presup-grand-total-val" id="presup-grand-total">$0</span></div>
+    </div>
+    <div class="field" style="margin-top:12px"><label>Notas</label><textarea id="p-notes" rows="2" placeholder="Observaciones..."></textarea></div>
+    <div class="modal-footer"><button class="btn-cancel" id="cancel-presup">Cancelar</button><button class="btn-save" id="save-presup">Guardar presupuesto</button></div>
+  </div>
+</div>
+
+<!-- Ver presupuesto -->
+<div class="modal-overlay" id="modal-view-presup">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title" id="view-presup-title">Presupuesto</span><button class="modal-close-btn" id="close-view-presup">✕</button></div>
+    <div id="view-presup-content"></div>
+    <div class="modal-footer" style="flex-wrap:wrap;gap:8px">
+      <button class="btn-sm" id="btn-edit-presup">✏️ Editar</button>
+      <button class="btn-sm" id="btn-wa-presup">📱 WhatsApp</button>
+      <button class="btn-sm gold" id="btn-pdf-presup">🖨 Imprimir PDF</button>
+      <button class="btn-sm danger" id="btn-del-presup">🗑 Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Ficha Cliente -->
+<div class="modal-overlay" id="modal-ficha-cliente">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="ficha-client-title">Cliente</span>
+      <div style="display:flex;gap:8px">
+        <button class="btn-sm" id="btn-ficha-edit">✏️</button>
+        <button class="modal-close-btn" id="close-ficha-cliente">✕</button>
+      </div>
+    </div>
+    <div id="ficha-client-info"></div>
+    <div class="seguimiento-header">
+      <div class="seguimiento-title">📋 Seguimiento</div>
+      <button class="btn-add-seg" id="btn-add-seg" title="Agregar tarea">＋</button>
+    </div>
+    <div id="ficha-seg-list"></div>
+  </div>
+</div>
+
+<!-- Nueva Tarea Seguimiento -->
+<div class="modal-overlay" id="modal-seg">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title" id="seg-modal-title">Nueva tarea</span><button class="modal-close-btn" id="close-seg">✕</button></div>
+    <input type="hidden" id="seg-id"/>
+    <input type="hidden" id="seg-client-id"/>
+    <div class="field"><label>Tipo de tarea *</label>
+      <select id="seg-tipo">
+        <option value="visita_preventiva">🔧 Visita preventiva</option>
+        <option value="visita_correctiva">🛠 Visita correctiva</option>
+        <option value="oferta_producto">💰 Oferta de producto</option>
+        <option value="llamado">📞 Llamado de seguimiento</option>
+        <option value="garantia">📋 Vencimiento de garantía</option>
+        <option value="otro">✏️ Otro</option>
+      </select>
+    </div>
+    <div id="seg-tipo-otro-wrap" style="display:none">
+      <div class="field"><label>Especificá el tipo</label><input id="seg-tipo-otro" placeholder="Ej: Revisión de cerco eléctrico"/></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Fecha *</label><input id="seg-fecha" type="date"/></div>
+      <div class="field"><label>Recordatorio</label>
+        <select id="seg-recordatorio">
+          <option value="0">Sin recordatorio</option><option value="1">1 día antes</option>
+          <option value="3">3 días antes</option><option value="7">1 semana antes</option>
+          <option value="15">15 días antes</option><option value="30">30 días antes</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label>Notas</label><textarea id="seg-notas" rows="3" placeholder="Ej: Ofrecer ampliación del sistema de cámaras..."></textarea></div>
+    <div class="modal-footer"><button class="btn-cancel" id="cancel-seg">Cancelar</button><button class="btn-save" id="save-seg">Guardar tarea</button></div>
+  </div>
+</div>
+
+<!-- Producto -->
+<div class="modal-overlay" id="modal-product">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title" id="modal-product-title">Nuevo producto</span><button class="modal-close-btn" id="close-product">✕</button></div>
+    <input type="hidden" id="prod-id"/>
+    <div class="field"><label>Tipo *</label>
+      <select id="prod-type">
+        <option value="camara">📷 Cámara</option><option value="alarma">🔔 Alarma/Sensor</option>
+        <option value="dvr">🖥 DVR/NVR</option><option value="acceso">🚪 Control de acceso</option>
+        <option value="cerco">⚡ Cerco eléctrico</option><option value="manoobra">🔧 Mano de obra</option><option value="otro">📦 Otro</option>
+      </select>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Marca</label><input id="prod-marca" placeholder="Hikvision, Dahua..."/></div>
+      <div class="field"><label>Modelo / Nombre *</label><input id="prod-nombre" placeholder="DS-2CD2143G2"/></div>
+    </div>
+    <div id="dynamic-prod-fields"></div>
+    <div class="field-row">
+      <div class="field"><label>Precio (ARS) *</label><input id="prod-precio" type="number" placeholder="25000"/></div>
+      <div class="field"><label>Notas</label><input id="prod-notas" placeholder="Incluye instalación..."/></div>
+    </div>
+    <div class="modal-footer"><button class="btn-cancel" id="cancel-product">Cancelar</button><button class="btn-save" id="save-product">Guardar producto</button></div>
+  </div>
+</div>
+
+<!-- Evento -->
+<div class="modal-overlay" id="modal-event">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title" id="modal-event-title">Nuevo evento</span><button class="modal-close-btn" id="close-event">✕</button></div>
+    <input type="hidden" id="ev-id"/>
+    <div class="field"><label>Título *</label><input id="ev-title" placeholder="Mantenimiento, instalación..."/></div>
+    <div class="field-row">
+      <div class="field"><label>Fecha *</label><input id="ev-date" type="date"/></div>
+      <div class="field"><label>Hora</label><input id="ev-time" type="time"/></div>
+    </div>
+    <div class="field"><label>Cliente</label><input id="ev-client" placeholder="Nombre del cliente"/></div>
+    <div class="field"><label>Notas</label><textarea id="ev-notes" rows="2" placeholder="Detalles..."></textarea></div>
+    <div class="modal-footer"><button class="btn-cancel" id="cancel-event">Cancelar</button><button class="btn-save" id="save-event">Guardar evento</button></div>
+  </div>
+</div>
+
+<!-- PDF -->
+<div id="pdf-overlay">
+  <div class="pdf-actions">
+    <button class="btn-sm" id="btn-close-pdf">✕ Cerrar</button>
+    <button class="btn-sm gold" onclick="window.print()">🖨 Imprimir</button>
+  </div>
+  <div id="pdf-content"></div>
+</div>
+
+<!-- PIN -->
+<div class="pin-overlay" id="pin-overlay">
+  <div class="pin-modal">
+    <div class="pin-modal-header"><span class="pin-modal-title">🔐 Acceso admin</span><button class="pin-close-btn" id="btn-pin-close">✕</button></div>
+    <p class="pin-sub">Ingresá el PIN de administrador</p>
+    <div class="pin-dots"><div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div><div class="pin-dot" id="d2"></div><div class="pin-dot" id="d3"></div></div>
+    <div class="pin-pad">
+      <button class="pin-btn" data-n="1">1</button><button class="pin-btn" data-n="2">2</button><button class="pin-btn" data-n="3">3</button>
+      <button class="pin-btn" data-n="4">4</button><button class="pin-btn" data-n="5">5</button><button class="pin-btn" data-n="6">6</button>
+      <button class="pin-btn" data-n="7">7</button><button class="pin-btn" data-n="8">8</button><button class="pin-btn" data-n="9">9</button>
+      <button class="pin-btn" data-n="del">⌫</button><button class="pin-btn" data-n="0">0</button>
+      <button class="pin-btn" data-n="ok" style="background:var(--blue);color:#fff;border-color:var(--blue);font-size:14px">OK</button>
+    </div>
+    <p class="pin-err" id="pin-err">PIN incorrecto</p>
+  </div>
+</div>
+
+<!-- DEMO VENCIDA -->
+<div id="demo-wall">
+  <div class="demo-card">
+    <div class="demo-icon">⏳</div>
+    <div class="demo-title">Tu demo de 24hs terminó</div>
+    <div class="demo-sub">Gracias por probar SecurePro. Para seguir gestionando tus clientes y presupuestos, contactanos y te activamos tu cuenta.</div>
+    <a href="mailto:ventas@raventechsapp.com?subject=Quiero activar SecurePro&body=Hola, probé la demo y me interesa continuar." class="btn-demo-email">✉️ Contactar por email</a>
+    <button class="btn-demo-logout" id="btn-demo-logout">Cerrar sesión</button>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,onAuthStateChanged,signOut,GoogleAuthProvider,signInWithPopup,setPersistence,browserLocalPersistence}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import{getFirestore,collection,doc,addDoc,getDocs,getDoc,updateDoc,deleteDoc,setDoc,query,where,orderBy,onSnapshot,serverTimestamp,Timestamp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+const FB={
+  apiKey:"AIzaSyDgpyUd8AExCLy29fwkjc5-mEALA57Wtig",
+  authDomain:"pro-a247e.firebaseapp.com",
+  projectId:"pro-a247e",
+  storageBucket:"pro-a247e.firebasestorage.app",
+  messagingSenderId:"3470750973",
+  appId:"1:3470750973:web:f3d029ed18093ecaf1ba94"
+};
+const ADMIN_PIN="2580";
+
+const fbApp=initializeApp(FB);
+const auth=getAuth(fbApp);
+const db=getFirestore(fbApp);
+async function logError(origen, mensaje, extra) {
+  try {
+    const uid = auth.currentUser ? auth.currentUser.uid : 'anonimo';
+    await addDoc(collection(db,'errores'), {
+      app: 'SecurePro', origen,
+      mensaje: String(mensaje),
+      extra: extra ? String(extra) : null,
+      uid,
+      ts: serverTimestamp()
+    });
+  } catch(_) {}
+}
+let authReady=setPersistence(auth,browserLocalPersistence)
+  .then(()=>console.log("✅ Persistencia local de sesión activada correctamente"))
+  .catch(err=>{
+    console.error("⚠️ No se pudo activar la persistencia local — la sesión puede no mantenerse entre cierres del navegador:",err);
+    logError("setPersistence","Falló la persistencia local",String(err));
+    return Promise.resolve();
+  });
+let me=null,userDoc=null;
+let negocioId=null,myRole="owner",negocioStatus="demo"; // owner | editor | viewer
+let unsubEquipo=null;
+let joinInProgress=false; // Evita que el segundo disparo de onAuthStateChanged pise el join
+let clients={},presupuestos={},products={},events={},seguimiento={},equipo=[];
+let presupItems=[],currentViewPresupId=null,currentFichaClientId=null;
+let calDate=new Date(),currentSection="dashboard";
+let logoTaps=0,logoTimer=null,pinBuf="";
+let isRegister=false;
+let empresa=JSON.parse(localStorage.getItem("sp-empresa")||"{}");
+const _inviteCode=new URLSearchParams(window.location.search).get("invite");
+let activeInvite=_inviteCode?{code:_inviteCode,negocioId:null,ownerUid:null,rol:null}:null;
+function canEdit(){return myRole==="owner"||myRole==="editor";}
+function canDelete(){return myRole==="owner";}
+function isOwner(){return myRole==="owner";}
+function tieneEquipo(){return (userDoc?.features?.limiteEmpleados??1) > 1;}
+const MESES=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const MESES_CORTO=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const PROD_TYPES={camara:"📷 Cámara",alarma:"🔔 Alarma/Sensor",dvr:"🖥 DVR/NVR",acceso:"🚪 Acceso",cerco:"⚡ Cerco",manoobra:"🔧 Mano de obra",otro:"📦 Otro"};
+const SEG_TIPOS={visita_preventiva:"🔧 Visita preventiva",visita_correctiva:"🛠 Visita correctiva",oferta_producto:"💰 Oferta de producto",llamado:"📞 Llamado de seguimiento",garantia:"📋 Vencimiento de garantía",otro:"✏️ Otro"};
+function segEstado(fecha){const hoy=new Date();hoy.setHours(0,0,0,0);const f=new Date(fecha+"T00:00:00");if(f<hoy)return"vencido";if(f.toDateString()===hoy.toDateString())return"hoy";return"pendiente";}
+function segTipoLabel(s){if(s.tipo==="otro")return"✏️ "+sanitizeHTML(s.tipoCustom||"Otro");return sanitizeHTML(SEG_TIPOS[s.tipo]||s.tipo);}
+function initTheme(){applyTheme(localStorage.getItem("sp-theme")||"light");}
+function applyTheme(t){
+  document.documentElement.setAttribute("data-theme",t);
+  const b=document.getElementById("btn-theme");
+  if(b)b.textContent=t==="dark"?"🌞":"🌙";
+  localStorage.setItem("sp-theme",t);
+}
+function toggleTheme(){applyTheme(document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark");}
+initTheme();
+function showScreen(id){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));document.getElementById(id).classList.add("active");}
+function toast(msg,type=""){
+  const el=document.createElement("div");el.className="toast"+(type?" "+type:"");
+  el.textContent=(type==="err"?"❌ ":type==="ok"?"✅ ":"✅ ")+msg;
+  document.getElementById("toast-wrap").appendChild(el);
+  setTimeout(()=>el.remove(),3000);
+}
+function emptyHTML(icon,msg,sub=""){return`<div class="empty"><div class="empty-icon">${icon}</div><div class="empty-msg">${msg}</div>${sub?`<div class="empty-sub">${sub}</div>`:""}</div>`;}
+function sanitizeHTML(str){const d=document.createElement("div");d.textContent=str??"";return d.innerHTML;}
+function fmtMoney(n){return"$"+(n||0).toLocaleString("es-AR");}
+function fmtDate(str){if(!str)return"—";const[y,m,d]=str.split("-");return`${d}/${m}/${y}`;}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).substr(2,5);}
+function openModal(id){document.getElementById(id).classList.add("open");}
+function closeModal(id){document.getElementById(id).classList.remove("open");}
+function updateHeaderEmpresa(){
+  const wrap=document.getElementById("header-empresa-wrap");const brand=document.getElementById("app-logo");
+  if(empresa.nombre){brand.style.display="none";wrap.style.display="flex";wrap.innerHTML=`<div class="header-empresa">${empresa.logoBase64?`<img src="${empresa.logoBase64}" class="header-empresa-logo" alt="logo"/>`:""}<span class="header-empresa-nombre">${sanitizeHTML(empresa.nombre)}</span></div>`;}
+  else{brand.style.display="";wrap.style.display="none";}
+}
+function loadConfigForm(){
+  document.getElementById("emp-nombre").value=empresa.nombre||"";document.getElementById("emp-direccion").value=empresa.direccion||"";
+  document.getElementById("emp-telefono").value=empresa.telefono||"";document.getElementById("emp-email").value=empresa.email||"";
+  const preview=document.getElementById("logo-preview");const btnRemove=document.getElementById("btn-remove-logo");
+  if(empresa.logoBase64){preview.innerHTML=`<img src="${empresa.logoBase64}" alt="logo"/>`;btnRemove.style.display="inline-flex";}
+  else{preview.innerHTML="🏢";btnRemove.style.display="none";}
+  updatePreviewEmpresa();
+}
+function updatePreviewEmpresa(){
+  const card=document.getElementById("preview-empresa-card");const content=document.getElementById("preview-empresa-content");
+  if(!empresa.nombre){card.style.display="none";return;}card.style.display="block";
+  const sub=[empresa.direccion,empresa.telefono,empresa.email].filter(Boolean).join(" · ");
+  content.innerHTML=`<div class="presup-empresa-header">${empresa.logoBase64?`<img src="${empresa.logoBase64}" class="presup-empresa-logo" alt="logo"/>`:""}<div class="presup-empresa-datos"><div class="presup-empresa-nombre">${sanitizeHTML(empresa.nombre)}</div>${sub?`<div class="presup-empresa-sub">${sanitizeHTML(sub)}</div>`:""}</div></div>`;
+}
+function getEmpresaHeaderPDF(){
+  if(!empresa.nombre)return`<div style="font-size:26px;font-weight:800;color:#1d4ed8">Secure<span style="color:#f0b84a">Pro</span></div><div style="font-size:12px;color:#64748b;margin-top:2px">Sistema de seguridad</div>`;
+  const sub=[empresa.direccion,empresa.telefono,empresa.email].filter(Boolean).join(" · ");
+  return`<div style="display:flex;align-items:center;gap:12px">${empresa.logoBase64?`<img src="${empresa.logoBase64}" style="width:52px;height:52px;object-fit:contain;border-radius:6px;" alt="logo"/>`:""}<div><div style="font-size:20px;font-weight:800;color:#1d4ed8">${sanitizeHTML(empresa.nombre)}</div>${sub?`<div style="font-size:11px;color:#64748b;margin-top:3px">${sanitizeHTML(sub)}</div>`:""}</div></div>`;
+}
+function getEmpresaHeaderVistaPrevia(){
+  if(!empresa.nombre)return"";
+  const sub=[empresa.direccion,empresa.telefono,empresa.email].filter(Boolean).join(" · ");
+  return`<div class="presup-empresa-header">${empresa.logoBase64?`<img src="${empresa.logoBase64}" class="presup-empresa-logo" alt="logo"/>`:""}<div class="presup-empresa-datos"><div class="presup-empresa-nombre">${sanitizeHTML(empresa.nombre)}</div>${sub?`<div class="presup-empresa-sub">${sanitizeHTML(sub)}</div>`:""}</div></div>`;
+}
+document.getElementById("logo-file-input").addEventListener("change",e=>{const file=e.target.files[0];if(!file)return;if(file.size>500000){toast("El logo no debe superar 500KB","err");return;}const reader=new FileReader();reader.onload=ev=>{empresa.logoBase64=ev.target.result;document.getElementById("logo-preview").innerHTML=`<img src="${empresa.logoBase64}" alt="logo"/>`;document.getElementById("btn-remove-logo").style.display="inline-flex";updatePreviewEmpresa();};reader.readAsDataURL(file);});
+document.getElementById("btn-remove-logo").addEventListener("click",()=>{empresa.logoBase64=null;document.getElementById("logo-preview").innerHTML="🏢";document.getElementById("btn-remove-logo").style.display="none";document.getElementById("logo-file-input").value="";updatePreviewEmpresa();});
+document.getElementById("save-empresa").addEventListener("click",()=>{const nombre=document.getElementById("emp-nombre").value.trim();if(!nombre){toast("El nombre de la empresa es obligatorio","err");return;}empresa={...empresa,nombre,direccion:document.getElementById("emp-direccion").value.trim(),telefono:document.getElementById("emp-telefono").value.trim(),email:document.getElementById("emp-email").value.trim()};localStorage.setItem("sp-empresa",JSON.stringify(empresa));toast("Datos guardados","ok");updateHeaderEmpresa();updatePreviewEmpresa();});
+["login-logo","app-logo"].forEach(id=>{
+  document.getElementById(id)?.addEventListener("click",()=>{
+    logoTaps++;clearTimeout(logoTimer);
+    if(logoTaps>=5){logoTaps=0;openPin();return;}
+    logoTimer=setTimeout(()=>logoTaps=0,2000);
+  });
+});
+function openPin(){pinBuf="";updDots();document.getElementById("pin-err").style.display="none";document.getElementById("pin-overlay").classList.add("open");}
+function closePin(){document.getElementById("pin-overlay").classList.remove("open");}
+function updDots(){for(let i=0;i<4;i++)document.getElementById("d"+i).classList.toggle("filled",i<pinBuf.length);}
+
+document.querySelector(".pin-pad").addEventListener("click",e=>{
+  const btn=e.target.closest(".pin-btn");if(!btn)return;
+  const n=btn.dataset.n;
+  if(n==="del"){pinBuf=pinBuf.slice(0,-1);updDots();return;}
+  if(n==="ok"||pinBuf.length===4){checkPin();return;}
+  if(pinBuf.length<4){pinBuf+=n;updDots();}
+  if(pinBuf.length===4)checkPin();
+});
+function checkPin(){
+  if(pinBuf===ADMIN_PIN){closePin();showScreen("screen-admin");loadAdminUsers();}
+  else{document.getElementById("pin-err").style.display="block";pinBuf="";updDots();setTimeout(()=>document.getElementById("pin-err").style.display="none",1500);}
+}
+document.getElementById("btn-pin-close").addEventListener("click",()=>closePin());
+document.getElementById("pin-overlay").addEventListener("click",e=>{if(e.target.id==="pin-overlay")closePin();});
+async function loadAdminUsers(){
+  const c=document.getElementById("admin-users-list");
+  c.innerHTML='<div class="loading-wrap"><div class="spinner"></div></div>';
+  const snap=await getDocs(collection(db,"usuarios"));
+  if(snap.empty){c.innerHTML=emptyHTML("👥","Sin usuarios");return;}
+  const ahora=Date.now();
+  c.innerHTML=snap.docs.map(d=>{
+    const u=d.data();const ban=u.banned===true;
+    let demoBadge='';let demoInfo='';let demoActions='';
+    if(u.status==='activo'){
+      demoBadge='<span class="demo-badge completa">ACTIVO</span>';
+    } else {
+      const start=u.demoStart?.toMillis?.()||0;
+      const expiry=u.demoExpiry?.toMillis?.()||start+86400000;
+      const restante=expiry-ahora;
+      if(restante>0){
+        const h=Math.floor(restante/3600000);const m=Math.floor((restante%3600000)/60000);
+        demoBadge='<span class="demo-badge activa">DEMO</span>';
+        demoInfo=`<div style="font-size:11px;color:var(--warn);margin-top:4px">⏱ Vence en ${h}h ${m}m</div>`;
+      } else {
+        demoBadge='<span class="demo-badge vencida">VENCIDA</span>';
+        demoInfo='<div style="font-size:11px;color:var(--red);margin-top:4px">Demo vencida</div>';
+      }
+      demoActions=`<div style="display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap">
+        <input type="number" min="1" max="30" value="7" style="width:56px;padding:6px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;font-family:var(--font)" data-ext-uid="${d.id}"/>
+        <button class="btn-aext" data-uid="${d.id}">⏱ Extender</button>
+        <button class="btn-aact" data-uid="${d.id}">✅ Activar</button>
+      </div>`;
+    }
+    return`<div class="admin-card">
+      <div class="admin-card-title">${sanitizeHTML(u.email)}${ban?'<span class="ban-badge">BANEADO</span>':''} ${demoBadge}</div>
+      <div class="admin-card-sub">${sanitizeHTML(u.email)}</div>
+      ${demoInfo}
+      <div class="admin-card-actions" style="margin-top:8px">
+        ${ban?`<button class="btn-aunban" data-uid="${d.id}">✅ Desbanear</button>`:`<button class="btn-aban" data-uid="${d.id}">🚫 Banear</button>`}
+        <button class="btn-adel" data-uid="${d.id}">🗑️ Eliminar</button>
+      </div>
+      ${demoActions}
+      ${u.rol==='owner'?`<div style="display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap">
+        <span style="font-size:12px;color:var(--muted)">Plan Empresa (límite de empleados):</span>
+        <input type="number" min="1" max="50" value="${u.features?.limiteEmpleados??1}" style="width:56px;padding:6px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;font-family:var(--font)" data-lim-uid="${d.id}"/>
+        <button class="btn-alim" data-uid="${d.id}">💾 Guardar</button>
+      </div>`:''}
+    </div>`;
+  }).join("");
+}
+async function loadAdminClients(){
+  const c=document.getElementById("admin-clients-list");
+  c.innerHTML='<div class="loading-wrap"><div class="spinner"></div></div>';
+  const snap=await getDocs(collection(db,"clientes"));
+  if(snap.empty){c.innerHTML=emptyHTML("👤","Sin clientes");return;}
+  c.innerHTML=snap.docs.map(d=>{const cl=d.data();return`<div class="admin-card"><div class="admin-card-title">${sanitizeHTML(cl.name||"—")}</div><div class="admin-card-sub">${sanitizeHTML(cl.addr||"—")}</div><div class="admin-card-actions"><button class="btn-adel" data-cid="${d.id}">🗑️ Eliminar</button></div></div>`;}).join("");
+}
+document.getElementById("admin-users-list").addEventListener("click",async e=>{
+  const ban=e.target.closest(".btn-aban");const unban=e.target.closest(".btn-aunban");const del=e.target.closest(".btn-adel[data-uid]");
+  const ext=e.target.closest(".btn-aext");const act=e.target.closest(".btn-aact");
+  const lim=e.target.closest(".btn-alim");
+  if(ban&&confirm("¿Banear este usuario?")){await updateDoc(doc(db,"usuarios",ban.dataset.uid),{banned:true});toast("Usuario baneado");await loadAdminUsers();}
+  if(unban){await updateDoc(doc(db,"usuarios",unban.dataset.uid),{banned:false});toast("Usuario desbaneado");await loadAdminUsers();}
+  if(del&&confirm("¿Eliminar este usuario?")){await deleteDoc(doc(db,"usuarios",del.dataset.uid));toast("Usuario eliminado");await loadAdminUsers();}
+  if(ext){
+    const dias=parseInt(document.querySelector(`input[data-ext-uid="${ext.dataset.uid}"]`)?.value)||7;
+    const snap=await getDoc(doc(db,"usuarios",ext.dataset.uid));const u=snap.data();
+    const baseMs=u.demoExpiry?.toMillis?.()||((u.demoStart?.toMillis?.()||Date.now())+86400000);
+    const nuevoExpiry=new Date(Math.max(baseMs,Date.now())+dias*86400000);
+    await updateDoc(doc(db,"usuarios",ext.dataset.uid),{demoExpiry:Timestamp.fromDate(nuevoExpiry),status:"demo"});
+    toast(`Demo extendida ${dias} días`,"ok");await loadAdminUsers();
+  }
+  if(act&&confirm("¿Activar cuenta completa?")){
+    await updateDoc(doc(db,"usuarios",act.dataset.uid),{status:"activo",demoExpiry:null});
+    try{
+      const uSnap=await getDoc(doc(db,"usuarios",act.dataset.uid));
+      const uData=uSnap.data();
+      if(uData?.negocioId&&uData?.rol==="owner"){
+        await updateDoc(doc(db,"negocios",uData.negocioId),{status:"activo"});
+      }
+    }catch(e){console.error("No se pudo propagar el activo al negocio:",e);}
+    toast("Cuenta activada","ok");await loadAdminUsers();
+  }
+  if(lim){
+    const nuevoLimite=parseInt(document.querySelector(`input[data-lim-uid="${lim.dataset.uid}"]`)?.value)||1;
+    try{
+      await updateDoc(doc(db,"usuarios",lim.dataset.uid),{"features.limiteEmpleados":nuevoLimite});
+      toast(`Límite de empleados actualizado a ${nuevoLimite}`,"ok");
+      if(me&&me.uid===lim.dataset.uid){
+        userDoc={...userDoc,features:{...userDoc.features,limiteEmpleados:nuevoLimite}};
+        document.getElementById("nav-equipo").style.display=(isOwner()&&tieneEquipo())?"":"none";
+      }
+    }catch(e){toast("Error al actualizar el límite","err");}
+  }
+});
+document.getElementById("admin-clients-list").addEventListener("click",async e=>{
+  const del=e.target.closest(".btn-adel[data-cid]");
+  if(del&&confirm("¿Eliminar este cliente?")){await deleteDoc(doc(db,"clientes",del.dataset.cid));toast("Cliente eliminado");await loadAdminClients();}
+});
+document.getElementById("atab-users").addEventListener("click",()=>{
+  document.getElementById("admin-users-view").style.display="block";document.getElementById("admin-clients-view").style.display="none";
+  document.getElementById("atab-users").classList.add("active");document.getElementById("atab-clients").classList.remove("active");
+  loadAdminUsers();
+});
+document.getElementById("atab-clients").addEventListener("click",()=>{
+  document.getElementById("admin-clients-view").style.display="block";document.getElementById("admin-users-view").style.display="none";
+  document.getElementById("atab-clients").classList.add("active");document.getElementById("atab-users").classList.remove("active");
+  loadAdminClients();
+});
+document.getElementById("btn-admin-exit").addEventListener("click",()=>{if(me)showScreen("screen-app");else showScreen("screen-login");});
+const DEMO_MS=24*60*60*1000;
+
+function getDemoRestante(data){
+  if(data.status==='activo')return Infinity;
+  const start=data.demoStart?.toMillis?.()||0;
+  const expiry=data.demoExpiry?.toMillis?.()||start+DEMO_MS;
+  return expiry-Date.now();
+}
+
+function checkDemo(){
+  if(!userDoc)return;
+  if(!isOwner()&&negocioStatus==="activo")return; // hereda activación del dueño
+  const restante=getDemoRestante(userDoc);
+  if(restante===Infinity)return;
+  if(restante<=0){document.getElementById('demo-wall').classList.add('open');return;}
+  const h=Math.floor(restante/3600000);
+  const m=Math.floor((restante%3600000)/60000);
+  const urgente=restante<3600000;
+  const cd=document.createElement('span');
+  cd.className='demo-countdown'+(urgente?' urgente':'');
+  cd.textContent='⏱ '+(h>0?h+'h '+m+'m':m+'m');
+  document.getElementById('app-header-right')?.appendChild(cd);
+}
+
+document.getElementById('btn-demo-logout').addEventListener('click',()=>signOut(auth));
+authReady.then(()=>{
+onAuthStateChanged(auth,async user=>{
+  if(_inviteCode)return;
+
+  if(user){
+    me=user;
+    const userRef=doc(db,"usuarios",user.uid);
+    let snap=await getDoc(userRef);
+
+    if(!snap.exists()){
+      const newNegRef=await addDoc(collection(db,"negocios"),{ownerUid:user.uid,nombre:"",createdAt:serverTimestamp()});
+      await setDoc(userRef,{
+        uid:user.uid,email:user.email,banned:false,rol:"owner",
+        negocioId:newNegRef.id,estado:"aprobado",
+        status:"demo",demoStart:serverTimestamp(),createdAt:serverTimestamp(),
+        features:{limiteEmpleados:1}
+      });
+      snap=await getDoc(userRef);
+    } else {
+      await setDoc(userRef,{uid:user.uid,email:user.email,updatedAt:serverTimestamp()},{merge:true});
+      snap=await getDoc(userRef);
+    }
+
+    userDoc=snap.data();
+    if(userDoc.banned){toast("Cuenta suspendida","err");await signOut(auth);return;}
+
+    if(!userDoc.negocioId){
+      const newNegRef=await addDoc(collection(db,"negocios"),{ownerUid:user.uid,nombre:"",createdAt:serverTimestamp()});
+      await setDoc(userRef,{uid:user.uid,negocioId:newNegRef.id,rol:"owner",estado:"aprobado"},{merge:true});
+      userDoc=(await getDoc(userRef)).data();
+    }
+
+    negocioId=userDoc.negocioId;
+    myRole=userDoc.rol||"owner";
+
+    if(userDoc.estado==="pendiente"){showScreen("screen-pending");return;}
+
+    if(isOwner()){
+      negocioStatus=userDoc.status||"demo";
+    } else {
+      try{
+        const negSnap=await getDoc(doc(db,"negocios",negocioId));
+        negocioStatus=negSnap.exists()&&negSnap.data().status==="activo"?"activo":"demo";
+      }catch(e){negocioStatus="demo";}
+    }
+
+    document.getElementById("user-badge").textContent=user.email;
+    document.getElementById("nav-equipo").style.display=(isOwner()&&tieneEquipo())?"":"none";
+    document.body.classList.toggle("role-viewer",myRole==="viewer");
+    document.body.classList.toggle("role-readonly",!canEdit());
+    showScreen("screen-app");updateHeaderEmpresa();
+    await loadData();showSection("dashboard");checkDemo();initOffline();chequearBackupDiario();
+  } else {
+    me=null;userDoc=null;negocioId=null;myRole="owner";
+    clients={};presupuestos={};products={};events={};seguimiento={};equipo=[];
+    if(unsubEquipo){unsubEquipo();unsubEquipo=null;}
+    document.body.classList.remove("role-readonly","role-viewer");
+    document.getElementById('demo-wall').classList.remove('open');
+    showScreen("screen-login");
+  }
+});
+}); // cierre de authReady.then()
+async function ejecutarJoin(userFirebase){
+  if(!activeInvite)return;
+  const inv=activeInvite; // copiar referencia antes de cualquier await
+  try{
+    await setDoc(doc(db,"usuarios",userFirebase.uid),{
+      uid:userFirebase.uid,
+      email:userFirebase.email,
+      rol:inv.rol,
+      negocioId:inv.negocioId,
+      estado:"pendiente",
+      banned:false,
+      status:"demo",
+      demoStart:serverTimestamp(),
+      createdAt:serverTimestamp()
+    });
+    await updateDoc(doc(db,"invitaciones",inv.code),{usado:true,usadoPor:userFirebase.email,usadoAt:serverTimestamp()});
+    window.history.replaceState({},"",window.location.pathname);
+    activeInvite=null;
+    showScreen("screen-pending");
+  }catch(e){
+    console.error("Error en ejecutarJoin:",e);
+    toast("Error al unirte al equipo: "+e.message,"err");
+  }
+}
+
+if(_inviteCode){
+  showScreen("screen-invite");
+  (async()=>{
+    try{
+      const invSnap=await getDoc(doc(db,"invitaciones",_inviteCode));
+      if(!invSnap.exists()){
+        document.getElementById("invite-neg-nombre").textContent="Link inválido";
+        document.getElementById("invite-expired-msg").style.display="block";
+        document.getElementById("invite-valid-wrap").style.display="none";
+        return;
+      }
+      const inv=invSnap.data();
+      if(inv.expiry?.toMillis?.()<Date.now()||inv.usado===true){
+        document.getElementById("invite-expired-msg").style.display="block";
+        document.getElementById("invite-valid-wrap").style.display="none";
+        document.getElementById("invite-already-logged").style.display="none";
+        return;
+      }
+      const negSnap=await getDoc(doc(db,"negocios",inv.negocioId));
+      const neg=negSnap.exists()?negSnap.data():{nombre:"este negocio"};
+      const rolLabel=inv.rol==="viewer"?"👁 Viewer (solo lectura)":"✏️ Editor";
+      document.getElementById("invite-neg-nombre").textContent=neg.nombre||"Equipo de seguridad";
+      document.getElementById("invite-neg-sub").textContent=`Fuiste invitado a unirte como ${rolLabel}`;
+      activeInvite={code:_inviteCode,negocioId:inv.negocioId,ownerUid:inv.ownerUid,rol:inv.rol||"editor"};
+      const currentUser=auth.currentUser;
+      if(currentUser){
+        document.getElementById("invite-valid-wrap").style.display="none";
+        document.getElementById("invite-already-logged").style.display="block";
+        document.getElementById("invite-role-badge-logged").textContent="✅ Invitación válida — "+rolLabel;
+        document.getElementById("invite-current-email").textContent=currentUser.email;
+      } else {
+        document.getElementById("invite-role-badge").textContent="✅ Invitación válida — "+rolLabel;
+      }
+    }catch(e){
+      document.getElementById("invite-neg-nombre").textContent="Error al cargar la invitación";
+      document.getElementById("invite-expired-msg").style.display="block";
+      document.getElementById("invite-valid-wrap").style.display="none";
+    }
+  })();
+}
+
+document.getElementById("btn-inv-cancel").addEventListener("click",()=>{
+  activeInvite=null;window.history.replaceState({},"",window.location.pathname);showScreen("screen-login");
+});
+document.getElementById("btn-inv-join").addEventListener("click",async()=>{
+  const u=auth.currentUser;if(!u||!activeInvite)return;
+  const btn=document.getElementById("btn-inv-join");btn.disabled=true;btn.textContent="Uniéndome...";
+  await ejecutarJoin(u);
+  btn.disabled=false;btn.textContent="Unirme al equipo →";
+});
+document.getElementById("btn-inv-google").addEventListener("click",async()=>{
+  if(!activeInvite)return;
+  const btn=document.getElementById("btn-inv-google");
+  btn.disabled=true;btn.textContent="Conectando...";
+  try{
+    const result=await signInWithPopup(auth,new GoogleAuthProvider());
+    await ejecutarJoin(result.user); // join inmediato con el user del resultado, sin depender de onAuthStateChanged
+  }catch(e){
+    const errEl=document.getElementById("inv-err");
+    errEl.textContent="Error al iniciar con Google.";errEl.style.display="block";
+  }
+  btn.disabled=false;
+  btn.innerHTML=`<svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/><path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2.04a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z"/><path fill="#FBBC05" d="M4.5 10.48A4.8 4.8 0 0 1 4.5 7.5V5.43H1.83a8 8 0 0 0 0 7.14l2.67-2.09z"/><path fill="#EA4335" d="M8.98 3.58c1.32 0 2.5.45 3.44 1.35l2.54-2.54A8 8 0 0 0 1.83 5.43L4.5 7.5c.66-1.97 2.49-3.92 4.48-3.92z"/></svg> Continuar con Google`;
+});
+document.getElementById("inv-toggle-login").addEventListener("click",()=>{
+  const loginWrap=document.getElementById("inv-login-wrap");
+  const registerBtn=document.getElementById("btn-inv-register");
+  const toggleBtn=document.getElementById("inv-toggle-login");
+  const showing=loginWrap.style.display==="block";
+  loginWrap.style.display=showing?"none":"block";
+  registerBtn.style.display=showing?"block":"none";
+  toggleBtn.textContent=showing?"Iniciá sesión":"Volver a registrarme";
+});
+document.getElementById("btn-inv-login").addEventListener("click",async()=>{
+  if(!activeInvite)return;
+  const email=document.getElementById("inv-email").value.trim();
+  const pass=document.getElementById("inv-pass").value;
+  const errEl=document.getElementById("inv-err");errEl.style.display="none";
+  if(!email||!pass){errEl.textContent="Completá todos los campos";errEl.style.display="block";return;}
+  const btn=document.getElementById("btn-inv-login");btn.disabled=true;btn.textContent="Ingresando...";
+  try{
+    const result=await signInWithEmailAndPassword(auth,email,pass);
+    await ejecutarJoin(result.user);
+  }catch(e){
+    const msgs={"auth/user-not-found":"No existe cuenta con ese email.","auth/wrong-password":"Contraseña incorrecta.","auth/invalid-credential":"Email o contraseña incorrectos."};
+    errEl.textContent=msgs[e.code]||"Error al ingresar.";errEl.style.display="block";
+    btn.disabled=false;btn.textContent="Ingresar y unirme →";
+  }
+});
+document.getElementById("btn-inv-register").addEventListener("click",async()=>{
+  if(!activeInvite)return;
+  const email=document.getElementById("inv-email").value.trim();
+  const pass=document.getElementById("inv-pass").value;
+  const errEl=document.getElementById("inv-err");errEl.style.display="none";
+  if(!email||!pass){errEl.textContent="Completá todos los campos";errEl.style.display="block";return;}
+  const btn=document.getElementById("btn-inv-register");btn.disabled=true;btn.textContent="Registrando...";
+  try{
+    const result=await createUserWithEmailAndPassword(auth,email,pass);
+    await ejecutarJoin(result.user);
+  }catch(e){
+    const msgs={"auth/email-already-in-use":"Ya existe cuenta con ese email. Usá la opción de login.","auth/weak-password":"Mínimo 6 caracteres."};
+    errEl.textContent=msgs[e.code]||"Error al registrarse.";errEl.style.display="block";
+    btn.disabled=false;btn.textContent="Registrarme y unirme →";
+  }
+});
+
+document.getElementById("btn-pending-logout").addEventListener("click",()=>signOut(auth));
+document.getElementById("toggle-mode").addEventListener("click",()=>{
+  isRegister=!isRegister;
+  document.getElementById("btn-auth").textContent=isRegister?"Crear cuenta →":"Ingresar →";
+  document.getElementById("toggle-mode").textContent=isRegister?"Ya tengo cuenta":"Registrarse";
+  document.getElementById("auth-title").textContent=isRegister?"Crear cuenta":"Bienvenido";
+});
+document.getElementById("f-pass").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("btn-auth").click();});
+
+document.getElementById("btn-auth").addEventListener("click",async()=>{
+  const email=document.getElementById("f-email").value.trim();
+  const pass=document.getElementById("f-pass").value;
+  const errEl=document.getElementById("auth-err");
+  errEl.style.display="none";errEl.classList.remove("show");
+  if(!email||!pass){errEl.textContent="Completá todos los campos";errEl.style.display="block";errEl.classList.add("show");return;}
+  const btn=document.getElementById("btn-auth");btn.disabled=true;btn.textContent=isRegister?"Creando...":"Ingresando...";
+  try{
+    if(isRegister)await createUserWithEmailAndPassword(auth,email,pass);
+    else await signInWithEmailAndPassword(auth,email,pass);
+  }catch(e){
+    const msgs={"auth/user-not-found":"No existe cuenta con ese email.","auth/wrong-password":"Contraseña incorrecta.","auth/email-already-in-use":"Ya existe cuenta con ese email.","auth/weak-password":"Mínimo 6 caracteres.","auth/invalid-credential":"Email o contraseña incorrectos."};
+    errEl.textContent=msgs[e.code]||"Error. Intentá de nuevo.";
+    errEl.style.display="block";errEl.classList.add("show");
+  }
+  btn.disabled=false;btn.textContent=isRegister?"Crear cuenta →":"Ingresar →";
+});
+
+document.getElementById("btn-logout").addEventListener("click",()=>signOut(auth));
+document.getElementById("btn-theme").addEventListener("click",()=>toggleTheme());
+async function loadData(){
+  const negId=negocioId;
+
+  async function safeLoad(name,q1,fallbackQ){
+    try{
+      return await getDocs(q1);
+    }catch(e){
+      console.error(`Error cargando ${name} (probablemente falta índice compuesto):`,e);
+      if(fallbackQ){
+        try{return await getDocs(fallbackQ);}
+        catch(e2){console.error(`Fallback de ${name} también falló:`,e2);toast(`No se pudo cargar ${name}`,"err");return{forEach:()=>{}};}
+      }
+      toast(`No se pudo cargar ${name}`,"err");
+      return{forEach:()=>{}};
+    }
+  }
+
+  const tasks=[
+    safeLoad("clientes",
+      query(collection(db,"clientes"),where("negocioId","==",negId),orderBy("createdAt","desc")),
+      query(collection(db,"clientes"),where("negocioId","==",negId))),
+    safeLoad("presupuestos",
+      query(collection(db,"presupuestos"),where("negocioId","==",negId),orderBy("createdAt","desc")),
+      query(collection(db,"presupuestos"),where("negocioId","==",negId))),
+    safeLoad("productos",
+      query(collection(db,"productos"),where("negocioId","==",negId),orderBy("type","asc")),
+      query(collection(db,"productos"),where("negocioId","==",negId))),
+    safeLoad("eventos",
+      query(collection(db,"eventos"),where("negocioId","==",negId),orderBy("date","asc")),
+      query(collection(db,"eventos"),where("negocioId","==",negId))),
+    safeLoad("seguimiento",
+      query(collection(db,"seguimiento"),where("negocioId","==",negId)),
+      null)
+  ];
+  if(isOwner()){
+    tasks.push(safeLoad("equipo",query(collection(db,"usuarios"),where("negocioId","==",negId)),null));
+  }
+  const results=await Promise.all(tasks);
+  const [cSnap,pSnap,prSnap,eSnap,sSnap]=results;
+  clients={};cSnap.forEach(d=>clients[d.id]={id:d.id,...d.data()});
+  presupuestos={};pSnap.forEach(d=>presupuestos[d.id]={id:d.id,...d.data()});
+  products={};prSnap.forEach(d=>products[d.id]={id:d.id,...d.data()});
+  events={};eSnap.forEach(d=>events[d.id]={id:d.id,...d.data()});
+  seguimiento={};sSnap.forEach(d=>{const s={id:d.id,...d.data()};if(!seguimiento[s.clientId])seguimiento[s.clientId]=[];seguimiento[s.clientId].push(s);});
+  if(isOwner()&&results[5]){
+    equipo=[];results[5].forEach(d=>equipo.push({id:d.id,...d.data()}));
+    startEquipoListener(negId);
+  }
+}
+function showSection(name){
+  currentSection=name;
+  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+  document.getElementById("section-"+name).classList.add("active");
+  document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.section===name));
+  const fab=document.getElementById("main-fab");
+  fab.style.display=["dashboard","configuracion","equipo"].includes(name)?"none":"flex";
+  if(name==="dashboard")renderDashboard();
+  else if(name==="clientes")renderClients();
+  else if(name==="presupuestos")renderPresupuestos();
+  else if(name==="catalogo")renderCatalogo();
+  else if(name==="calendario"){renderCalendar();renderEvents();}
+  else if(name==="configuracion")loadConfigForm();
+  else if(name==="equipo")renderEquipo();
+}
+document.querySelectorAll(".nav-btn[data-section]").forEach(b=>b.addEventListener("click",()=>showSection(b.dataset.section)));
+document.getElementById("main-fab").addEventListener("click",()=>{
+  if(currentSection==="clientes")openClientModal();
+  else if(currentSection==="presupuestos")openPresupModal();
+  else if(currentSection==="catalogo")openProductModal();
+  else if(currentSection==="calendario")openEventModal();
+});
+function renderDashboard(){
+  const allClients=Object.values(clients);
+  const allPresup=Object.values(presupuestos);
+  const allEvents=Object.values(events);
+  const now=new Date();
+  const thisMonth=now.getMonth();const thisYear=now.getFullYear();
+  const eventosEsteMes=allEvents.filter(e=>{const d=new Date(e.date+"T00:00:00");return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;}).length;
+  document.getElementById("stat-total").textContent=allClients.length;
+  document.getElementById("stat-cam").textContent=allClients.filter(c=>c.camaras).length;
+  document.getElementById("stat-alarm").textContent=allClients.filter(c=>c.alarma).length;
+  document.getElementById("stat-eventos").textContent=eventosEsteMes;
+  const proxEventos=allEvents.filter(e=>new Date(e.date+"T00:00:00")>=new Date(now.toDateString())).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,4);
+  const evEl=document.getElementById("dash-events");
+  evEl.innerHTML=proxEventos.length===0?emptyHTML("📅","Sin eventos próximos"):proxEventos.map(e=>eventItemHTML(e)).join("");
+  const presEl=document.getElementById("dash-presup");
+  presEl.innerHTML=allPresup.slice(0,3).map(p=>`<div class="presup-card" data-pid="${p.id}"><div class="presup-icon">💰</div><div class="presup-info"><div class="presup-client">${sanitizeHTML(p.client)}</div><div class="presup-date">${fmtDate(p.date)}</div></div><div class="presup-total">${fmtMoney(p.total)}</div></div>`).join("")||emptyHTML("💰","Sin presupuestos");
+  presEl.querySelectorAll(".presup-card[data-pid]").forEach(el=>el.addEventListener("click",()=>viewPresup(el.dataset.pid)));
+  const clEl=document.getElementById("dash-clients");
+  clEl.innerHTML=allClients.slice(0,3).map(c=>clientRowHTML(c,false)).join("")||emptyHTML("👤","Sin clientes");
+  renderDashSeguimiento();
+}
+
+function renderDashSeguimiento(){
+  const hoy=new Date();hoy.setHours(0,0,0,0);const en7=new Date(hoy.getTime()+7*86400000);
+  const proximasTareas=Object.entries(seguimiento).flatMap(([cid,tareas])=>tareas.filter(s=>s.estado!=="completado").map(s=>({...s,clientName:clients[cid]?.name||"",cid}))).filter(s=>{const f=new Date(s.fecha+"T00:00:00");return f<=en7;}).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const el=document.getElementById("dash-seguimiento");
+  if(!el)return;
+  if(!proximasTareas.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:12px">Sin tareas próximas</div>';return;}
+  el.innerHTML=proximasTareas.map(s=>{const estado=segEstado(s.fecha);const badgeClass=estado==="vencido"?"vencido":estado==="hoy"?"hoy":"proximo";const badgeLabel=estado==="vencido"?"Vencido":estado==="hoy"?"Hoy":fmtDate(s.fecha);
+    return`<div class="dash-seg-item"><span class="dash-seg-badge ${badgeClass}">${badgeLabel}</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:var(--text)">${segTipoLabel(s)}</div><div style="font-size:12px;color:var(--muted)">${sanitizeHTML(s.clientName)}</div>${s.notas?`<div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${sanitizeHTML(s.notas)}</div>`:""}</div></div>`;
+  }).join("");
+}
+function renderClients(){
+  const q=(document.getElementById("search-clients")?.value||"").toLowerCase();
+  const list=Object.values(clients).filter(c=>!q||(c.name+c.addr+c.phone).toLowerCase().includes(q)).sort((a,b)=>(a.name||"").localeCompare(b.name||""));
+  const el=document.getElementById("client-list");
+  el.innerHTML=list.length===0?emptyHTML("👤","Sin clientes","Tocá + para agregar el primero"):list.map(c=>clientRowHTML(c,true)).join("");
+  el.querySelectorAll(".client-card").forEach(card=>{
+    card.addEventListener("click",e=>{if(e.target.closest(".btn-edit-client")||e.target.closest(".btn-del-client"))return;openFichaCliente(card.dataset.cid);});
+    card.querySelector(".btn-edit-client")?.addEventListener("click",e=>{e.stopPropagation();openClientModal(clients[card.dataset.cid]);});
+    card.querySelector(".btn-del-client")?.addEventListener("click",e=>{e.stopPropagation();deleteClient(card.dataset.cid);});
+  });
+}
+function openFichaCliente(cid){
+  currentFichaClientId=cid;const c=clients[cid];if(!c)return;
+  document.getElementById("ficha-client-title").textContent=c.name;
+  const tags=[c.camaras?'<span class="tag cam">📷 Cámaras</span>':"",c.alarma?'<span class="tag alarm">🔔 Alarma</span>':"",c.cerco?'<span class="tag cerco">⚡ Cerco</span>':"",c.acceso?'<span class="tag acceso">🚪 Acceso</span>':""].filter(Boolean).join("");
+  document.getElementById("ficha-client-info").innerHTML=`<div class="ficha-tags">${tags||'<span style="color:var(--muted);font-size:13px">Sin instalaciones</span>'}</div>${c.addr?`<div class="ficha-dato">📍 <strong>${sanitizeHTML(c.addr)}</strong></div>`:""} ${c.phone?`<div class="ficha-dato">📞 <strong>${sanitizeHTML(c.phone)}</strong></div>`:""} ${c.email?`<div class="ficha-dato">✉️ <strong>${sanitizeHTML(c.email)}</strong></div>`:""} ${c.notes?`<div class="ficha-dato" style="margin-top:6px">${sanitizeHTML(c.notes)}</div>`:""}`;
+  document.getElementById("btn-ficha-edit").onclick=()=>{closeModal("modal-ficha-cliente");openClientModal(c);};
+  renderFichaSeg();openModal("modal-ficha-cliente");
+}
+function renderFichaSeg(){
+  const list=(seguimiento[currentFichaClientId]||[]).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const el=document.getElementById("ficha-seg-list");
+  if(!list.length){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Sin tareas de seguimiento.<br>Tocá ＋ para agregar una.</div>';return;}
+  el.innerHTML=list.map(s=>{
+    const estado=s.estado==="completado"?"completado":segEstado(s.fecha);
+    const dotClass=estado==="vencido"?"vencido":estado==="hoy"?"pendiente":estado==="completado"?"completado":"pendiente";
+    const rec=s.recordatorio&&s.recordatorio!=="0"?`<span style="font-size:10px;color:var(--muted)"> · 🔔 ${s.recordatorio}d antes</span>`:"";
+    return`<div class="seg-item ${s.estado==="completado"?"completado":""}"><div class="seg-dot ${dotClass}"></div><div class="seg-body"><div class="seg-tipo">${segTipoLabel(s)}</div><div class="seg-fecha">${fmtDate(s.fecha)}${rec}</div>${s.notas?`<div class="seg-notas">${sanitizeHTML(s.notas)}</div>`:""}</div><div class="seg-actions">${s.estado!=="completado"?`<button class="seg-btn ok" data-sid="${s.id}" data-action="done">✓</button>`:`<button class="seg-btn" data-sid="${s.id}" data-action="reopen">↩</button>`}<button class="seg-btn" data-sid="${s.id}" data-action="edit">✏️</button><button class="seg-btn" data-sid="${s.id}" data-action="del">🗑</button></div></div>`;
+  }).join("");
+  el.querySelectorAll("[data-action]").forEach(btn=>{
+    const sid=btn.dataset.sid,action=btn.dataset.action;
+    btn.addEventListener("click",async()=>{
+      const arr=seguimiento[currentFichaClientId]||[];const idx=arr.findIndex(s=>s.id===sid);if(idx===-1)return;
+      const ref=doc(db,"seguimiento",sid);
+      if(action==="done"){await updateDoc(ref,{estado:"completado"});arr[idx].estado="completado";renderFichaSeg();renderDashboard();}
+      else if(action==="reopen"){await updateDoc(ref,{estado:"pendiente"});arr[idx].estado="pendiente";renderFichaSeg();renderDashboard();}
+      else if(action==="del"){if(!confirm("¿Eliminar esta tarea?"))return;await deleteDoc(ref);arr.splice(idx,1);renderFichaSeg();renderDashboard();}
+      else if(action==="edit"){openSegModal(currentFichaClientId,arr[idx]);}
+    });
+  });
+}
+function openSegModal(cid,seg=null){
+  document.getElementById("seg-modal-title").textContent=seg?"Editar tarea":"Nueva tarea";
+  document.getElementById("seg-id").value=seg?.id||"";document.getElementById("seg-client-id").value=cid;
+  document.getElementById("seg-tipo").value=seg?.tipo||"visita_preventiva";document.getElementById("seg-tipo-otro").value=seg?.tipoCustom||"";
+  document.getElementById("seg-tipo-otro-wrap").style.display=seg?.tipo==="otro"?"block":"none";
+  document.getElementById("seg-fecha").value=seg?.fecha||new Date().toISOString().split("T")[0];
+  document.getElementById("seg-recordatorio").value=seg?.recordatorio||"0";document.getElementById("seg-notas").value=seg?.notas||"";
+  openModal("modal-seg");
+}
+document.getElementById("seg-tipo").addEventListener("change",()=>{document.getElementById("seg-tipo-otro-wrap").style.display=document.getElementById("seg-tipo").value==="otro"?"block":"none";});
+document.getElementById("btn-add-seg").addEventListener("click",()=>openSegModal(currentFichaClientId));
+document.getElementById("close-seg").addEventListener("click",()=>closeModal("modal-seg"));
+document.getElementById("cancel-seg").addEventListener("click",()=>closeModal("modal-seg"));
+document.getElementById("modal-seg").addEventListener("click",e=>{if(e.target.id==="modal-seg")closeModal("modal-seg");});
+document.getElementById("close-ficha-cliente").addEventListener("click",()=>closeModal("modal-ficha-cliente"));
+document.getElementById("modal-ficha-cliente").addEventListener("click",e=>{if(e.target.id==="modal-ficha-cliente")closeModal("modal-ficha-cliente");});
+document.getElementById("save-seg").addEventListener("click",async()=>{
+  const fecha=document.getElementById("seg-fecha").value;const tipo=document.getElementById("seg-tipo").value;
+  if(!fecha){toast("La fecha es obligatoria","err");return;}
+  if(tipo==="otro"&&!document.getElementById("seg-tipo-otro").value.trim()){toast("Especificá el tipo de tarea","err");return;}
+  const cid=document.getElementById("seg-client-id").value;const existingId=document.getElementById("seg-id").value;
+  const data={tipo,tipoCustom:document.getElementById("seg-tipo-otro").value.trim(),fecha,recordatorio:document.getElementById("seg-recordatorio").value,notas:document.getElementById("seg-notas").value.trim(),clientId:cid,negocioId,uid:me.uid};
+  if(!seguimiento[cid])seguimiento[cid]=[];const arr=seguimiento[cid];
+  try{
+    if(existingId){await updateDoc(doc(db,"seguimiento",existingId),data);const idx=arr.findIndex(s=>s.id===existingId);if(idx>=0)arr[idx]={...arr[idx],...data};}
+    else{data.estado="pendiente";const ref=await addDoc(collection(db,"seguimiento"),{...data,createdAt:serverTimestamp()});arr.push({id:ref.id,...data});}
+    closeModal("modal-seg");toast("Tarea guardada","ok");renderFichaSeg();renderDashboard();renderCalendar();renderEvents();
+  }catch(e){toast("Error al guardar","err");}
+});
+function clientRowHTML(c,withActions){
+  const tags=[c.camaras?'<span class="tag cam">📷 Cámaras</span>':"",c.alarma?'<span class="tag alarm">🔔 Alarma</span>':"",c.cerco?'<span class="tag cerco">⚡ Cerco</span>':"",c.acceso?'<span class="tag acceso">🚪 Acceso</span>':""].filter(Boolean).join("");
+  return`<div class="client-card" data-cid="${c.id}">
+    <div class="client-av">${sanitizeHTML((c.name||"?").substring(0,2).toUpperCase())}</div>
+    <div class="client-info">
+      <div class="client-name">${sanitizeHTML(c.name||"—")}</div>
+      <div class="client-addr">${sanitizeHTML(c.addr||"—")}${c.phone?" · "+sanitizeHTML(c.phone):""}</div>
+      <div class="client-tags">${tags}</div>
+    </div>
+    ${withActions?`<div class="client-actions"><button class="btn-sm btn-edit-client">✏️</button><button class="btn-sm danger btn-del-client">🗑</button></div>`:""}
+  </div>`;
+}
+document.getElementById("search-clients").addEventListener("input",()=>renderClients());
+
+async function deleteClient(id){
+  if(!confirm("¿Eliminar este cliente?"))return;
+  await deleteDoc(doc(db,"clientes",id));
+  delete clients[id];toast("Cliente eliminado");renderClients();renderDashboard();
+}
+function openClientModal(c=null){
+  document.getElementById("modal-client-title").textContent=c?"Editar cliente":"Nuevo cliente";
+  document.getElementById("c-id").value=c?.id||"";
+  document.getElementById("c-name").value=c?.name||"";
+  document.getElementById("c-phone").value=c?.phone||"";
+  document.getElementById("c-email").value=c?.email||"";
+  document.getElementById("c-addr").value=c?.addr||"";
+  document.getElementById("c-notes").value=c?.notes||"";
+  const cats=[
+    {key:"camaras",cb:"cb-cam",panel:"det-camaras",row:"chk-camaras"},
+    {key:"alarma",cb:"cb-alarm",panel:"det-alarma",row:"chk-alarma"},
+    {key:"cerco",cb:"cb-cerco",panel:"det-cerco",row:"chk-cerco"},
+    {key:"acceso",cb:"cb-access",panel:"det-acceso",row:"chk-acceso"}
+  ];
+  cats.forEach(({key,cb,panel,row})=>{
+    const checked=c?.[key]||false;
+    document.getElementById(cb).checked=checked;
+    document.getElementById(row).classList.toggle("checked",checked);
+    document.getElementById(panel).style.display=checked?"block":"none";
+  });
+  const d=c?.detalle||{};
+  document.getElementById("det-cam-qty").value=d.cam?.qty||"";
+  document.getElementById("det-cam-mp").value=d.cam?.mp||"";
+  document.getElementById("det-cam-int").checked=d.cam?.int||false;
+  document.getElementById("det-cam-ext").checked=d.cam?.ext||false;
+  document.getElementById("det-cam-domo").checked=d.cam?.domo||false;
+  document.getElementById("det-cam-bala").checked=d.cam?.bala||false;
+  document.getElementById("det-cam-notes").value=d.cam?.notes||"";
+  document.getElementById("det-alarm-qty").value=d.alarm?.qty||"";
+  document.getElementById("det-alarm-panel").value=d.alarm?.panel||"";
+  document.getElementById("det-alarm-mov").checked=d.alarm?.mov||false;
+  document.getElementById("det-alarm-aper").checked=d.alarm?.aper||false;
+  document.getElementById("det-alarm-barr").checked=d.alarm?.barr||false;
+  if(d.alarm?.sirena==="si")document.getElementById("det-alarm-sir-si").checked=true;
+  else if(d.alarm?.sirena==="no")document.getElementById("det-alarm-sir-no").checked=true;
+  else{document.getElementById("det-alarm-sir-si").checked=false;document.getElementById("det-alarm-sir-no").checked=false;}
+  document.getElementById("det-alarm-notes").value=d.alarm?.notes||"";
+  document.getElementById("det-cerco-metros").value=d.cerco?.metros||"";
+  document.getElementById("det-cerco-voltaje").value=d.cerco?.voltaje||"";
+  document.getElementById("det-cerco-sectores").value=d.cerco?.sectores||"";
+  document.getElementById("det-cerco-notes").value=d.cerco?.notes||"";
+  document.getElementById("det-acc-qty").value=d.acc?.qty||"";
+  document.getElementById("det-acc-tipo").value=d.acc?.tipo||"";
+  document.getElementById("det-acc-notes").value=d.acc?.notes||"";
+
+  openModal("modal-client");
+}
+document.getElementById("btn-new-client").addEventListener("click",()=>openClientModal());
+document.getElementById("close-client").addEventListener("click",()=>closeModal("modal-client"));
+document.getElementById("cancel-client").addEventListener("click",()=>closeModal("modal-client"));
+document.getElementById("modal-client").addEventListener("click",e=>{if(e.target.id==="modal-client")closeModal("modal-client");});
+const DET_MAP={
+  "chk-camaras":{cb:"cb-cam",panel:"det-camaras"},
+  "chk-alarma":{cb:"cb-alarm",panel:"det-alarma"},
+  "chk-cerco":{cb:"cb-cerco",panel:"det-cerco"},
+  "chk-acceso":{cb:"cb-access",panel:"det-acceso"}
+};
+Object.entries(DET_MAP).forEach(([rowId,{cb,panel}])=>{
+  document.getElementById(rowId)?.addEventListener("click",e=>{
+    const row=e.currentTarget;const checkbox=document.getElementById(cb);
+    checkbox.checked=!checkbox.checked;
+    row.classList.toggle("checked",checkbox.checked);
+    document.getElementById(panel).style.display=checkbox.checked?"block":"none";
+  });
+});
+document.getElementById("save-client").addEventListener("click",async()=>{
+  const name=document.getElementById("c-name").value.trim();
+  if(!name){toast("El nombre es obligatorio","err");return;}
+  const id=document.getElementById("c-id").value;
+  const data={
+    name,
+    phone:document.getElementById("c-phone").value.trim(),
+    email:document.getElementById("c-email").value.trim(),
+    addr:document.getElementById("c-addr").value.trim(),
+    notes:document.getElementById("c-notes").value.trim(),
+    camaras:document.getElementById("cb-cam").checked,
+    alarma:document.getElementById("cb-alarm").checked,
+    cerco:document.getElementById("cb-cerco").checked,
+    acceso:document.getElementById("cb-access").checked,
+    detalle:{
+      cam:{
+        qty:document.getElementById("det-cam-qty").value,
+        mp:document.getElementById("det-cam-mp").value,
+        int:document.getElementById("det-cam-int").checked,
+        ext:document.getElementById("det-cam-ext").checked,
+        domo:document.getElementById("det-cam-domo").checked,
+        bala:document.getElementById("det-cam-bala").checked,
+        notes:document.getElementById("det-cam-notes").value.trim()
+      },
+      alarm:{
+        qty:document.getElementById("det-alarm-qty").value,
+        panel:document.getElementById("det-alarm-panel").value,
+        mov:document.getElementById("det-alarm-mov").checked,
+        aper:document.getElementById("det-alarm-aper").checked,
+        barr:document.getElementById("det-alarm-barr").checked,
+        sirena:document.querySelector('input[name="det-alarm-sirena"]:checked')?.value||"",
+        notes:document.getElementById("det-alarm-notes").value.trim()
+      },
+      cerco:{
+        metros:document.getElementById("det-cerco-metros").value,
+        voltaje:document.getElementById("det-cerco-voltaje").value,
+        sectores:document.getElementById("det-cerco-sectores").value,
+        notes:document.getElementById("det-cerco-notes").value.trim()
+      },
+      acc:{
+        qty:document.getElementById("det-acc-qty").value,
+        tipo:document.getElementById("det-acc-tipo").value,
+        notes:document.getElementById("det-acc-notes").value.trim()
+      }
+    },
+    negocioId,uid:me.uid
+  };
+  const btn=document.getElementById("save-client");btn.disabled=true;btn.textContent="Guardando...";
+  try{
+    if(id){await updateDoc(doc(db,"clientes",id),data);clients[id]={id,...data};}
+    else{const ref=await addDoc(collection(db,"clientes"),{...data,createdAt:serverTimestamp()});clients[ref.id]={id:ref.id,...data};}
+    closeModal("modal-client");toast("Cliente guardado","ok");renderClients();renderDashboard();
+  }catch(e){toast("Error al guardar","err");}
+  btn.disabled=false;btn.textContent="Guardar cliente";
+});
+function renderPresupuestos(){
+  const q=(document.getElementById("search-presup")?.value||"").toLowerCase();
+  const list=Object.values(presupuestos).filter(p=>!q||p.client.toLowerCase().includes(q));
+  const el=document.getElementById("presup-list");
+  el.innerHTML=list.length===0?emptyHTML("💰","Sin presupuestos","Tocá + para crear uno"):list.map(p=>`<div class="presup-card" data-pid="${p.id}"><div class="presup-icon">💰</div><div class="presup-info"><div class="presup-client">${sanitizeHTML(p.client)}</div><div class="presup-date">${fmtDate(p.date)}</div></div><div class="presup-total">${fmtMoney(p.total)}</div></div>`).join("");
+  el.querySelectorAll(".presup-card[data-pid]").forEach(el=>el.addEventListener("click",()=>viewPresup(el.dataset.pid)));
+}
+document.getElementById("search-presup").addEventListener("input",()=>renderPresupuestos());
+
+function openPresupModal(p=null){
+  document.getElementById("modal-presup-title").textContent=p?"Editar presupuesto":"Nuevo presupuesto";
+  document.getElementById("p-id").value=p?.id||"";
+  document.getElementById("p-client").value=p?.client||"";
+  document.getElementById("p-date").value=p?.date||new Date().toISOString().split("T")[0];
+  document.getElementById("p-notes").value=p?.notes||"";
+  document.getElementById("total-adj").value=p?.totalAdj||0;
+  document.getElementById("total-adj-badge").style.display="none";
+  presupItems=p?.items?JSON.parse(JSON.stringify(p.items)):[];
+  renderPresupItems();
+  openModal("modal-presup");
+}
+document.getElementById("btn-new-presup").addEventListener("click",()=>openPresupModal());
+document.getElementById("close-presup").addEventListener("click",()=>closeModal("modal-presup"));
+document.getElementById("cancel-presup").addEventListener("click",()=>closeModal("modal-presup"));
+document.getElementById("modal-presup").addEventListener("click",e=>{if(e.target.id==="modal-presup")closeModal("modal-presup");});
+document.getElementById("total-adj").addEventListener("change",()=>recalcPresup());
+
+function renderPresupItems(){
+  const container=document.getElementById("presup-items-list");
+  if(presupItems.length===0){container.innerHTML='<div style="text-align:center;padding:12px;color:var(--muted);font-size:13px">Sin ítems. Buscá un producto arriba.</div>';recalcPresup();return;}
+  container.innerHTML=presupItems.map((item,i)=>{
+    const adjPrice=item.precio*(1+(item.adj||0)/100);
+    const total=adjPrice*item.qty;
+    return`<div class="presup-item-row">
+      <div><div class="presup-item-name">${item.nombre}</div><div class="presup-item-desc">${item.desc||""}</div></div>
+      <div class="presup-item-right">
+        <div class="qty-row">
+          <button class="qty-btn" data-qi="${i}" data-delta="-1">−</button>
+          <span class="qty-val">${item.qty}</span>
+          <button class="qty-btn" data-qi="${i}" data-delta="1">＋</button>
+        </div>
+        <select class="adj-select" data-ai="${i}">
+          <option value="0"${item.adj==0?" selected":""}>Sin ajuste</option>
+          <option value="10"${item.adj==10?" selected":""}>+10%</option>
+          <option value="20"${item.adj==20?" selected":""}>+20%</option>
+          <option value="30"${item.adj==30?" selected":""}>+30%</option>
+        </select>
+        <div class="item-price">${fmtMoney(total)}${item.adj>0?` <span class="adj-badge">+${item.adj}%</span>`:""}</div>
+        <button class="btn-sm danger" data-ri="${i}" style="padding:4px 8px">🗑</button>
+      </div>
+    </div>`;
+  }).join("");
+  container.querySelectorAll(".qty-btn").forEach(b=>b.addEventListener("click",()=>{const i=parseInt(b.dataset.qi);presupItems[i].qty=Math.max(1,(presupItems[i].qty||1)+parseInt(b.dataset.delta));renderPresupItems();}));
+  container.querySelectorAll(".adj-select").forEach(s=>s.addEventListener("change",()=>{const i=parseInt(s.dataset.ai);presupItems[i].adj=parseInt(s.value)||0;renderPresupItems();}));
+  container.querySelectorAll("[data-ri]").forEach(b=>b.addEventListener("click",()=>{presupItems.splice(parseInt(b.dataset.ri),1);renderPresupItems();}));
+  recalcPresup();
+}
+
+function recalcPresup(){
+  const subtotal=presupItems.reduce((s,item)=>s+item.precio*(1+(item.adj||0)/100)*item.qty,0);
+  const adjPct=parseInt(document.getElementById("total-adj")?.value||0);
+  const total=subtotal*(1+adjPct/100);
+  const badge=document.getElementById("total-adj-badge");
+  document.getElementById("presup-subtotal-val").textContent=fmtMoney(subtotal);
+  document.getElementById("presup-grand-total").textContent=fmtMoney(total);
+  if(badge){badge.style.display=adjPct>0?"inline":"none";badge.textContent="+"+adjPct+"%";}
+}
+document.getElementById("p-client").addEventListener("input",()=>{
+  const q=document.getElementById("p-client").value.trim().toLowerCase();
+  const dropdown=document.getElementById("client-dropdown");
+  if(!q){dropdown.style.display="none";return;}
+  const matches=Object.values(clients).filter(c=>(c.name||"").toLowerCase().includes(q)).slice(0,8);
+  if(!matches.length){dropdown.style.display="none";return;}
+  dropdown.innerHTML=matches.map(c=>`<div class="prod-option" data-cid="${c.id}">
+    <div class="prod-option-name">${sanitizeHTML(c.name)}</div>
+    <div class="prod-option-desc">${sanitizeHTML(c.addr||c.phone||"")}</div>
+  </div>`).join("");
+  dropdown.style.display="block";
+  dropdown.querySelectorAll(".prod-option[data-cid]").forEach(el=>el.addEventListener("click",()=>{
+    const c=clients[el.dataset.cid];if(!c)return;
+    document.getElementById("p-client").value=c.name;
+    dropdown.style.display="none";
+  }));
+});
+document.addEventListener("click",e=>{
+  if(!e.target.closest("#p-client")&&!e.target.closest("#client-dropdown"))
+    document.getElementById("client-dropdown").style.display="none";
+});
+document.getElementById("prod-search-input").addEventListener("input",()=>{
+  const q=document.getElementById("prod-search-input").value.trim().toLowerCase();
+  const dropdown=document.getElementById("prod-dropdown");
+  if(!q){dropdown.style.display="none";return;}
+  const prods=Object.values(products).filter(p=>(p.marca+" "+p.nombre+" "+p.type).toLowerCase().includes(q));
+  dropdown.innerHTML=prods.length===0?'<div class="prod-option" style="color:var(--muted)">Sin resultados</div>':prods.map(p=>`<div class="prod-option" data-pid="${p.id}"><div class="prod-option-name">${sanitizeHTML(p.marca)} ${sanitizeHTML(p.nombre)}</div><div class="prod-option-desc">${sanitizeHTML(buildProdDesc(p))}</div><div class="prod-option-price">${fmtMoney(p.precio)}</div></div>`).join("");
+  dropdown.style.display="block";
+  dropdown.querySelectorAll(".prod-option[data-pid]").forEach(el=>el.addEventListener("click",()=>{
+    const p=products[el.dataset.pid];if(!p)return;
+    presupItems.push({prodId:p.id,nombre:p.marca+" "+p.nombre,desc:buildProdDesc(p),precio:p.precio,qty:1,adj:0});
+    document.getElementById("prod-search-input").value="";dropdown.style.display="none";
+    renderPresupItems();
+  }));
+});
+document.addEventListener("click",e=>{if(!e.target.closest(".product-search-wrap"))document.getElementById("prod-dropdown").style.display="none";});
+
+function buildProdDesc(p){
+  const parts=[];if(p.marca)parts.push(p.marca);if(p.type==="camara"&&p.mp)parts.push(p.mp+"MP");if(p.notas)parts.push(p.notas);return parts.join(" · ");}
+
+document.getElementById("save-presup").addEventListener("click",async()=>{
+  const client=document.getElementById("p-client").value.trim();
+  if(!client){toast("El cliente es obligatorio","err");return;}
+  const id=document.getElementById("p-id").value;
+  const subtotal=presupItems.reduce((s,item)=>s+item.precio*(1+(item.adj||0)/100)*item.qty,0);
+  const adjPct=parseInt(document.getElementById("total-adj").value||0);
+  const total=subtotal*(1+adjPct/100);
+  const data={client,date:document.getElementById("p-date").value,notes:document.getElementById("p-notes").value.trim(),items:JSON.parse(JSON.stringify(presupItems)),subtotal,totalAdj:adjPct,total,negocioId,uid:me.uid};
+  const btn=document.getElementById("save-presup");btn.disabled=true;btn.textContent="Guardando...";
+  try{
+    if(id){await updateDoc(doc(db,"presupuestos",id),data);presupuestos[id]={id,...data};}
+    else{const ref=await addDoc(collection(db,"presupuestos"),{...data,createdAt:serverTimestamp()});presupuestos[ref.id]={id:ref.id,...data};}
+    closeModal("modal-presup");toast("Presupuesto guardado","ok");renderPresupuestos();renderDashboard();
+  }catch(e){toast("Error al guardar","err");}
+  btn.disabled=false;btn.textContent="Guardar presupuesto";
+});
+function viewPresup(id){
+  const p=presupuestos[id];if(!p)return;
+  currentViewPresupId=id;
+  document.getElementById("view-presup-title").textContent="Presupuesto — "+p.client;
+  const itemsHTML=(p.items||[]).map(item=>{const adjPrice=item.precio*(1+(item.adj||0)/100);const lineTotal=adjPrice*item.qty;return`<div class="view-presup-item"><div><div style="font-weight:700">${sanitizeHTML(item.nombre)}</div><div style="font-size:12px;color:var(--muted)">x${item.qty}${item.adj>0?' <span class="adj-badge">+'+item.adj+'%</span>':""}</div></div><div style="font-weight:700">${fmtMoney(lineTotal)}</div></div>`;}).join("");
+  document.getElementById("view-presup-content").innerHTML=`${getEmpresaHeaderVistaPrevia()}<div style="font-size:13px;color:var(--muted);margin-bottom:4px">Cliente</div><div style="font-size:17px;font-weight:800;margin-bottom:4px">${sanitizeHTML(p.client)}</div><div style="font-size:12px;color:var(--muted);margin-bottom:16px">${fmtDate(p.date)}</div>${itemsHTML}<div class="presup-total-box" style="margin-top:12px"><div class="presup-total-row"><span style="color:var(--muted)">Subtotal</span><span>${fmtMoney(p.subtotal)}</span></div>${p.totalAdj>0?`<div class="presup-total-row"><span style="color:var(--muted)">Ajuste</span><span class="adj-badge">+${p.totalAdj}%</span></div>`:""}<div class="presup-total-row"><span style="font-size:15px;font-weight:700">TOTAL</span><span class="presup-grand-total-val">${fmtMoney(p.total)}</span></div></div>${p.notes?`<div style="font-size:13px;color:var(--muted);margin-top:12px">${sanitizeHTML(p.notes)}</div>`:""}`;
+  openModal("modal-view-presup");
+}
+document.getElementById("close-view-presup").addEventListener("click",()=>closeModal("modal-view-presup"));
+document.getElementById("modal-view-presup").addEventListener("click",e=>{if(e.target.id==="modal-view-presup")closeModal("modal-view-presup");});
+document.getElementById("btn-edit-presup").addEventListener("click",()=>{closeModal("modal-view-presup");openPresupModal(presupuestos[currentViewPresupId]);});
+document.getElementById("btn-del-presup").addEventListener("click",async()=>{
+  if(!confirm("¿Eliminar este presupuesto?"))return;
+  await deleteDoc(doc(db,"presupuestos",currentViewPresupId));
+  delete presupuestos[currentViewPresupId];
+  closeModal("modal-view-presup");toast("Presupuesto eliminado");renderPresupuestos();renderDashboard();
+});
+document.getElementById("btn-wa-presup").addEventListener("click",()=>{
+  const p=presupuestos[currentViewPresupId];if(!p)return;
+  let msg="*Presupuesto*\nCliente: "+p.client+"\nFecha: "+fmtDate(p.date)+"\n\n*Detalle:*\n";
+  (p.items||[]).forEach(item=>{const adjPrice=item.precio*(1+(item.adj||0)/100);msg+="• "+item.nombre+" x"+item.qty+": "+fmtMoney(adjPrice*item.qty)+"\n";});
+  msg+="\n*TOTAL: "+fmtMoney(p.total)+"*";
+  window.open("https://wa.me/?text="+encodeURIComponent(msg),"_blank");
+});
+document.getElementById("btn-pdf-presup").addEventListener("click",()=>{
+  const p=presupuestos[currentViewPresupId];if(!p)return;
+  const itemsRows=(p.items||[]).map(item=>{const adjPrice=item.precio*(1+(item.adj||0)/100);const lineTotal=adjPrice*item.qty;return`<tr><td style="padding:10px 12px;border-bottom:1px solid #e2e8f0"><div style="font-weight:600;font-size:13px">${sanitizeHTML(item.nombre)}</div><div style="font-size:11px;color:#64748b">${sanitizeHTML(item.desc||"")}</div></td><td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:center;font-size:13px">${item.qty}</td><td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:right;font-size:13px;font-weight:700">${fmtMoney(lineTotal)}</td></tr>`;}).join("");
+  document.getElementById("pdf-content").innerHTML=`<div style="max-width:700px;margin:0 auto;font-family:'Segoe UI',system-ui,sans-serif;color:#1e293b"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px"><div>${getEmpresaHeaderPDF()}</div><div style="text-align:right"><div style="font-size:22px;font-weight:800">PRESUPUESTO</div><div style="font-size:13px;color:#64748b;margin-top:4px">Fecha: ${fmtDate(p.date)}</div></div></div><div style="background:#f8fafc;border-radius:10px;padding:16px 20px;margin-bottom:28px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#64748b;margin-bottom:6px">Cliente</div><div style="font-size:18px;font-weight:700">${sanitizeHTML(p.client)}</div>${p.notes?`<div style="font-size:13px;color:#64748b;margin-top:4px">${sanitizeHTML(p.notes)}</div>`:""}</div><table style="width:100%;border-collapse:collapse;margin-bottom:16px"><thead><tr style="background:#1d4ed8;color:white"><th style="padding:10px 12px;text-align:left;font-size:12px;font-weight:700">Producto</th><th style="padding:10px 12px;text-align:center;font-size:12px;font-weight:700">Cant.</th><th style="padding:10px 12px;text-align:right;font-size:12px;font-weight:700">Precio</th></tr></thead><tbody>${itemsRows}</tbody><tfoot><tr><td colspan="2" style="padding:10px 12px;text-align:right;color:#64748b;font-size:13px">Subtotal</td><td style="padding:10px 12px;text-align:right;font-size:13px;font-weight:600">${fmtMoney(p.subtotal)}</td></tr><tr style="background:#e8f0fe"><td colspan="2" style="padding:12px;text-align:right;font-size:16px;font-weight:800;color:#1d4ed8">TOTAL</td><td style="padding:12px;text-align:right;font-size:22px;font-weight:800;color:#1d4ed8">${fmtMoney(p.total)}</td></tr></tfoot></table><div style="margin-top:32px;padding-top:16px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;text-align:center">Presupuesto generado con SecurePro</div></div>`;
+  closeModal("modal-view-presup");
+  document.getElementById("pdf-overlay").style.display="block";
+  window.scrollTo(0,0);
+});
+document.getElementById("btn-close-pdf").addEventListener("click",()=>{document.getElementById("pdf-overlay").style.display="none";});
+
+function renderCatalogo(){
+  const q=(document.getElementById("search-prod")?.value||"").toLowerCase();
+  let prods=Object.values(products).filter(p=>!q||(p.marca+" "+p.nombre+" "+p.type).toLowerCase().includes(q));
+  prods.sort((a,b)=>(a.type+a.marca+a.nombre).localeCompare(b.type+b.marca+b.nombre));
+  const el=document.getElementById("catalogo-list");
+  if(prods.length===0){el.innerHTML=emptyHTML("📦","Sin productos","Tocá + para crear el catálogo");return;}
+  const groups={};prods.forEach(p=>{if(!groups[p.type])groups[p.type]=[];groups[p.type].push(p);});
+  let html="";
+  Object.keys(groups).forEach(type=>{
+    html+=`<div class="type-label">${PROD_TYPES[type]||type}</div>`;
+    groups[type].forEach(p=>{html+=`<div class="prod-card"><div><div class="prod-name">${sanitizeHTML(p.marca)} ${sanitizeHTML(p.nombre)}</div><div class="prod-desc">${sanitizeHTML(buildProdDesc(p))}</div></div><div style="display:flex;align-items:center;gap:8px"><span class="prod-price">${fmtMoney(p.precio)}</span><div class="prod-actions"><button class="btn-sm" data-edit="${p.id}">✏️</button><button class="btn-sm danger" data-del="${p.id}">🗑</button></div></div></div>`;});
+  });
+  el.innerHTML=html;
+  el.querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>openProductModal(products[b.dataset.edit])));
+  el.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",()=>deleteProduct(b.dataset.del)));
+}
+document.getElementById("search-prod").addEventListener("input",()=>renderCatalogo());
+
+async function deleteProduct(id){
+  if(!confirm("¿Eliminar este producto?"))return;
+  await deleteDoc(doc(db,"productos",id));delete products[id];toast("Producto eliminado");renderCatalogo();
+}
+
+function openProductModal(p=null){
+  document.getElementById("modal-product-title").textContent=p?"Editar producto":"Nuevo producto";
+  document.getElementById("prod-id").value=p?.id||"";
+  document.getElementById("prod-type").value=p?.type||"camara";
+  document.getElementById("prod-marca").value=p?.marca||"";
+  document.getElementById("prod-nombre").value=p?.nombre||"";
+  document.getElementById("prod-precio").value=p?.precio||"";
+  document.getElementById("prod-notas").value=p?.notas||"";
+  updateProdFields(p);
+  openModal("modal-product");
+}
+document.getElementById("btn-new-prod").addEventListener("click",()=>openProductModal());
+document.getElementById("close-product").addEventListener("click",()=>closeModal("modal-product"));
+document.getElementById("cancel-product").addEventListener("click",()=>closeModal("modal-product"));
+document.getElementById("modal-product").addEventListener("click",e=>{if(e.target.id==="modal-product")closeModal("modal-product");});
+document.getElementById("prod-type").addEventListener("change",()=>updateProdFields(null));
+
+function updateProdFields(p){
+  const type=document.getElementById("prod-type").value;
+  const c=document.getElementById("dynamic-prod-fields");
+  if(type==="camara"){c.innerHTML=`<div class="dynamic-fields"><div class="field-row"><div class="field"><label>Megapíxeles</label><select id="prod-mp"><option value="">—</option><option>2</option><option>4</option><option>5</option><option>8</option><option>12</option></select></div><div class="field"><label>Ubicación</label><select id="prod-ubicacion"><option value="">—</option><option>Interior</option><option>Exterior</option><option>Interior/Exterior</option></select></div></div></div>`;if(p){document.getElementById("prod-mp").value=p.mp||"";document.getElementById("prod-ubicacion").value=p.ubicacion||"";}}
+  else if(type==="alarma"){c.innerHTML=`<div class="dynamic-fields"><div class="field"><label>Componente</label><select id="prod-componente"><option value="">—</option><option>Sensor de movimiento</option><option>Sensor de apertura</option><option>Barrera infrarroja</option><option>Sirena</option><option>Panel de alarma</option><option>Teclado</option><option>Batería</option></select></div></div>`;if(p)document.getElementById("prod-componente").value=p.componente||"";}
+  else if(type==="dvr"){c.innerHTML=`<div class="dynamic-fields"><div class="field"><label>Canales</label><select id="prod-canales"><option value="">—</option><option>4</option><option>8</option><option>16</option><option>32</option></select></div></div>`;if(p)document.getElementById("prod-canales").value=p.canales||"";}
+  else c.innerHTML="";
+}
+
+document.getElementById("save-product").addEventListener("click",async()=>{
+  const nombre=document.getElementById("prod-nombre").value.trim();
+  const precio=parseFloat(document.getElementById("prod-precio").value);
+  if(!nombre||!precio){toast("Nombre y precio son obligatorios","err");return;}
+  const id=document.getElementById("prod-id").value;
+  const type=document.getElementById("prod-type").value;
+  const data={type,marca:document.getElementById("prod-marca").value.trim(),nombre,precio,notas:document.getElementById("prod-notas").value.trim(),negocioId,uid:me.uid};
+  if(type==="camara"){data.mp=document.getElementById("prod-mp")?.value||"";data.ubicacion=document.getElementById("prod-ubicacion")?.value||"";}
+  else if(type==="alarma"){data.componente=document.getElementById("prod-componente")?.value||"";}
+  else if(type==="dvr"){data.canales=document.getElementById("prod-canales")?.value||"";}
+  const btn=document.getElementById("save-product");btn.disabled=true;btn.textContent="Guardando...";
+  try{
+    if(id){await updateDoc(doc(db,"productos",id),data);products[id]={id,...data};}
+    else{const ref=await addDoc(collection(db,"productos"),{...data,createdAt:serverTimestamp()});products[ref.id]={id:ref.id,...data};}
+    closeModal("modal-product");toast("Producto guardado","ok");renderCatalogo();
+  }catch(e){toast("Error al guardar","err");}
+  btn.disabled=false;btn.textContent="Guardar producto";
+});
+function renderCalendar(){
+  const year=calDate.getFullYear();const month=calDate.getMonth();
+  document.getElementById("cal-title").textContent=MESES[month]+" "+year;
+  const headers=document.getElementById("cal-headers");
+  headers.innerHTML=["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"].map(d=>`<div class="cal-day-header">${d}</div>`).join("");
+  const firstDay=new Date(year,month,1).getDay();
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const daysInPrev=new Date(year,month,0).getDate();
+  const today=new Date();let cells="";
+  for(let i=0;i<firstDay;i++){cells+=`<div class="cal-day other-month"><div class="cal-day-num">${daysInPrev-firstDay+1+i}</div></div>`;}
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr=`${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const hasEvent=Object.values(events).some(e=>e.date===dateStr);
+    const hasSeg=Object.values(seguimiento).some(tareas=>tareas.some(s=>s.estado!=="completado"&&s.fecha===dateStr));
+    const isToday=d===today.getDate()&&month===today.getMonth()&&year===today.getFullYear();
+    cells+=`<div class="cal-day${isToday?" today":""}"><div class="cal-day-num">${d}</div>${hasEvent?'<div class="cal-dot"></div>':""}${hasSeg?'<div class="cal-dot" style="background:var(--warn)"></div>':""}</div>`;
+  }
+  const remaining=(7-(firstDay+daysInMonth)%7)%7;
+  for(let d=1;d<=remaining;d++){cells+=`<div class="cal-day other-month"><div class="cal-day-num">${d}</div></div>`;}
+  document.getElementById("cal-grid").innerHTML=cells;
+}
+
+function renderEvents(){
+  const allEv=Object.values(events).sort((a,b)=>a.date.localeCompare(b.date));
+  const allSeg=Object.entries(seguimiento).flatMap(([cid,tareas])=>tareas.filter(s=>s.estado!=="completado").map(s=>({...s,clientName:clients[cid]?.name||""}))).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const el=document.getElementById("events-list");
+  const evHTML=allEv.length===0?"":allEv.map(e=>eventItemHTML(e,true)).join("");
+  const segHTML=allSeg.length===0?"":`<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 6px">📋 Seguimiento programado</div>`+allSeg.map(s=>{const parts=s.fecha.split("-");return`<div class="event-item"><div class="event-date-box" style="background:var(--warn)"><div class="event-day">${parts[2]}</div><div class="event-month">${MESES_CORTO[parseInt(parts[1])-1]}</div></div><div class="event-info"><div class="event-title">${segTipoLabel(s)}</div><div class="event-client">${sanitizeHTML(s.clientName)}</div>${s.notas?`<div style="font-size:12px;color:var(--muted);margin-top:2px">${sanitizeHTML(s.notas)}</div>`:""}</div></div>`;}).join("");
+  el.innerHTML=(evHTML+segHTML)||emptyHTML("📅","Sin eventos ni seguimientos","Tocá + para agregar uno");
+  el.querySelectorAll("[data-del-ev]").forEach(b=>b.addEventListener("click",()=>deleteEvent(b.dataset.delEv)));
+}
+function eventItemHTML(e,withDel=false){
+  const parts=e.date.split("-");
+  return`<div class="event-item"><div class="event-date-box"><div class="event-day">${parts[2]}</div><div class="event-month">${MESES_CORTO[parseInt(parts[1])-1]}</div></div><div class="event-info"><div class="event-title">${sanitizeHTML(e.title)}</div><div class="event-client">${sanitizeHTML(e.client||"")}${e.time?" · "+sanitizeHTML(e.time):""}</div>${e.notes?`<div style="font-size:12px;color:var(--muted);margin-top:2px">${sanitizeHTML(e.notes)}</div>`:""}</div>${withDel?`<button class="btn-sm danger" data-del-ev="${e.id}" style="flex-shrink:0">🗑</button>`:""}</div>`;
+}
+async function deleteEvent(id){
+  if(!confirm("¿Eliminar este evento?"))return;
+  await deleteDoc(doc(db,"eventos",id));delete events[id];toast("Evento eliminado");renderCalendar();renderEvents();renderDashboard();
+}
+
+function openEventModal(ev=null){
+  document.getElementById("modal-event-title").textContent=ev?"Editar evento":"Nuevo evento";
+  document.getElementById("ev-id").value=ev?.id||"";
+  document.getElementById("ev-title").value=ev?.title||"";
+  document.getElementById("ev-date").value=ev?.date||new Date().toISOString().split("T")[0];
+  document.getElementById("ev-time").value=ev?.time||"";
+  document.getElementById("ev-client").value=ev?.client||"";
+  document.getElementById("ev-notes").value=ev?.notes||"";
+  openModal("modal-event");
+}
+document.getElementById("btn-new-event").addEventListener("click",()=>openEventModal());
+document.getElementById("close-event").addEventListener("click",()=>closeModal("modal-event"));
+document.getElementById("cancel-event").addEventListener("click",()=>closeModal("modal-event"));
+document.getElementById("modal-event").addEventListener("click",e=>{if(e.target.id==="modal-event")closeModal("modal-event");});
+document.getElementById("btn-cal-prev").addEventListener("click",()=>{calDate.setMonth(calDate.getMonth()-1);renderCalendar();});
+document.getElementById("btn-cal-next").addEventListener("click",()=>{calDate.setMonth(calDate.getMonth()+1);renderCalendar();});
+
+document.getElementById("save-event").addEventListener("click",async()=>{
+  const title=document.getElementById("ev-title").value.trim();
+  const date=document.getElementById("ev-date").value;
+  if(!title||!date){toast("Título y fecha son obligatorios","err");return;}
+  const id=document.getElementById("ev-id").value;
+  const data={title,date,time:document.getElementById("ev-time").value,client:document.getElementById("ev-client").value.trim(),notes:document.getElementById("ev-notes").value.trim(),negocioId,uid:me.uid};
+  const btn=document.getElementById("save-event");btn.disabled=true;btn.textContent="Guardando...";
+  try{
+    if(id){await updateDoc(doc(db,"eventos",id),data);events[id]={id,...data};}
+    else{const ref=await addDoc(collection(db,"eventos"),{...data,createdAt:serverTimestamp()});events[ref.id]={id:ref.id,...data};}
+    closeModal("modal-event");toast("Evento guardado","ok");renderCalendar();renderEvents();renderDashboard();
+  }catch(e){toast("Error al guardar","err");}
+  btn.disabled=false;btn.textContent="Guardar evento";
+});
+document.getElementById("btn-google").addEventListener("click",async()=>{
+  const btn=document.getElementById("btn-google");
+  btn.disabled=true;btn.textContent="Conectando...";
+  try{
+    const provider=new GoogleAuthProvider();
+    await signInWithPopup(auth,provider);
+  }catch(e){
+    console.error(e);
+    const errEl=document.getElementById("auth-err");
+    if(errEl){errEl.textContent="Error al iniciar con Google. Intentá de nuevo.";errEl.style.display="block";errEl.classList.add("show");}
+  }
+  btn.disabled=false;
+});
+function startEquipoListener(negId){
+  if(unsubEquipo)unsubEquipo();
+  unsubEquipo=onSnapshot(
+    query(collection(db,"usuarios"),where("negocioId","==",negId)),
+    snap=>{
+      equipo=[];snap.forEach(d=>equipo.push({id:d.id,...d.data()}));
+      if(currentSection==="equipo")renderEquipo();
+      const pendN=equipo.filter(e=>e.estado==="pendiente"&&e.id!==me?.uid).length;
+      const navEquipo=document.getElementById("nav-equipo");
+      if(navEquipo&&pendN>0)navEquipo.textContent=`👥 Equipo (${pendN})`;
+      else if(navEquipo)navEquipo.textContent="👥 Equipo";
+    },
+    err=>console.error("Error en listener de equipo:",err)
+  );
+}
+
+function renderEquipo(){
+  const pendientes=equipo.filter(e=>e.estado==="pendiente"&&e.id!==me.uid);
+  const activos=equipo.filter(e=>e.estado==="aprobado"&&e.id!==me.uid);
+
+  const elPend=document.getElementById("equipo-pendientes");
+  const elAct=document.getElementById("equipo-activos");
+
+  if(pendientes.length){
+    elPend.innerHTML=`<div style="font-size:12px;font-weight:700;color:var(--warn);text-transform:uppercase;letter-spacing:.5px;margin:18px 0 10px">⏳ Pendientes de aprobación</div>`+
+      pendientes.map(e=>equipoCardHTML(e,true)).join("");
+    elPend.querySelectorAll("[data-aprobar]").forEach(b=>b.addEventListener("click",()=>aprobarMiembro(b.dataset.aprobar)));
+    elPend.querySelectorAll("[data-rechazar]").forEach(b=>b.addEventListener("click",()=>rechazarMiembro(b.dataset.rechazar)));
+  } else elPend.innerHTML="";
+
+  if(activos.length){
+    elAct.innerHTML=`<div style="font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin:18px 0 10px">✅ Equipo activo</div>`+
+      activos.map(e=>equipoCardHTML(e,false)).join("");
+    elAct.querySelectorAll("[data-quitar]").forEach(b=>b.addEventListener("click",()=>quitarMiembro(b.dataset.quitar)));
+    elAct.querySelectorAll("[data-rol]").forEach(sel=>sel.addEventListener("change",()=>cambiarRol(sel.dataset.rol,sel.value)));
+  } else if(!pendientes.length){
+    elAct.innerHTML=emptyHTML("👥","Sin técnicos en el equipo","Generá un link de invitación arriba");
+  } else elAct.innerHTML="";
+}
+function equipoCardHTML(e,esPendiente){
+  const rolLabel=e.rol==="viewer"?"👁 Viewer":"✏️ Editor";
+  return`<div class="equipo-card">
+    <div class="equipo-av">${sanitizeHTML((e.email||"?").substring(0,2).toUpperCase())}</div>
+    <div class="equipo-info">
+      <div class="equipo-email">${sanitizeHTML(e.email)}</div>
+      <div class="equipo-rol">${esPendiente?"Esperando aprobación":rolLabel}</div>
+    </div>
+    ${esPendiente?
+      `<div class="equipo-actions">
+        <button class="btn-sm primary" data-aprobar="${e.id}">✓ Aprobar</button>
+        <button class="btn-sm danger" data-rechazar="${e.id}">✕</button>
+      </div>`:
+      `<div class="equipo-actions">
+        <select class="btn-sm" data-rol="${e.id}" style="padding:6px 8px">
+          <option value="editor"${e.rol==="editor"?" selected":""}>Editor</option>
+          <option value="viewer"${e.rol==="viewer"?" selected":""}>Viewer</option>
+        </select>
+        <button class="btn-sm danger" data-quitar="${e.id}">🗑</button>
+      </div>`}
+  </div>`;
+}
+async function aprobarMiembro(uid){
+  try{
+    await updateDoc(doc(db,"usuarios",uid),{estado:"aprobado"});
+    const m=equipo.find(e=>e.id===uid);if(m)m.estado="aprobado";
+    toast("Técnico aprobado","ok");renderEquipo();
+  }catch(e){toast("Error al aprobar","err");}
+}
+async function rechazarMiembro(uid){
+  if(!confirm("¿Rechazar y eliminar esta solicitud?"))return;
+  try{
+    await deleteDoc(doc(db,"usuarios",uid));
+    equipo=equipo.filter(e=>e.id!==uid);
+    toast("Solicitud rechazada");renderEquipo();
+  }catch(e){toast("Error al rechazar","err");}
+}
+async function quitarMiembro(uid){
+  if(!confirm("¿Quitar a este técnico del equipo? Va a perder el acceso."))return;
+  try{
+    await updateDoc(doc(db,"usuarios",uid),{estado:"pendiente",banned:true});
+    equipo=equipo.filter(e=>e.id!==uid);
+    toast("Técnico removido del equipo");renderEquipo();
+  }catch(e){toast("Error al quitar técnico","err");}
+}
+async function cambiarRol(uid,nuevoRol){
+  try{
+    await updateDoc(doc(db,"usuarios",uid),{rol:nuevoRol});
+    const m=equipo.find(e=>e.id===uid);if(m)m.rol=nuevoRol;
+    toast("Rol actualizado","ok");
+  }catch(e){toast("Error al cambiar el rol","err");renderEquipo();}
+}
+document.getElementById("btn-gen-invite").addEventListener("click",async()=>{
+  const rol=document.getElementById("invite-role-select").value;
+  const btn=document.getElementById("btn-gen-invite");
+  btn.disabled=true;btn.textContent="Generando...";
+  try{
+    const expiry=new Date(Date.now()+24*60*60*1000);
+    const code=Math.random().toString(36).substring(2,10)+Date.now().toString(36);
+    await setDoc(doc(db,"invitaciones",code),{negocioId,ownerUid:me.uid,rol,expiry:Timestamp.fromDate(expiry),usado:false,createdAt:serverTimestamp()});
+    const baseUrl=window.location.origin+window.location.pathname;
+    const link=`${baseUrl}?invite=${code}`;
+    const wrap=document.getElementById("invite-wrap");
+    const horaExp=expiry.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"});
+    const rolLabel=rol==="viewer"?"Viewer (solo lectura)":"Editor";
+    const waText=encodeURIComponent(`¡Hola! Te invito a unirte al equipo de SecurePro como ${rolLabel}. El link es válido por 24 horas:\n${link}`);
+    wrap.innerHTML=`
+      <div class="invite-row">
+        <div class="invite-link-box">${link}</div>
+        <button class="btn-copy-link" data-copy="${link}">📋 Copiar</button>
+      </div>
+      <button class="btn-wa-invite" data-wa="${waText}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.126.555 4.122 1.524 5.854L.055 23.454a.75.75 0 0 0 .919.919l5.6-1.469A11.951 11.951 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.951 9.951 0 0 1-5.073-1.386l-.361-.214-3.754.984.998-3.648-.235-.374A9.956 9.956 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+        Compartir por WhatsApp
+      </button>
+      <div class="invite-expiry">⏰ Vence hoy a las ${horaExp} · Rol: ${rolLabel}</div>
+      <div style="margin-top:10px"><button class="btn-primary" style="background:var(--surface2);color:var(--muted);border:1.5px solid var(--border);box-shadow:none;font-size:13px" id="btn-gen-invite-new">🔄 Generar nuevo link</button></div>`;
+    wrap.querySelector("[data-copy]")?.addEventListener("click",e=>{
+      navigator.clipboard.writeText(e.target.dataset.copy).then(()=>toast("Link copiado","ok")).catch(()=>{
+        const ta=document.createElement("textarea");ta.value=e.target.dataset.copy;document.body.appendChild(ta);ta.select();document.execCommand("copy");document.body.removeChild(ta);toast("Link copiado","ok");
+      });
+    });
+    wrap.querySelector("[data-wa]")?.addEventListener("click",e=>{window.open(`https://wa.me/?text=${e.target.closest("[data-wa]").dataset.wa}`,"_blank");});
+    wrap.querySelector("#btn-gen-invite-new")?.addEventListener("click",()=>renderEquipo());
+  }catch(e){toast("Error al generar el link","err");btn.disabled=false;btn.textContent="Generar link de invitación";}
+});
+async function exportarCSV() {
+  try {
+    const negId = negocioId; // variable global del módulo
+    if (!negId) { toast('Seleccioná un negocio primero'); return; }
+    const snap = await getDocs(query(collection(db,'clientes'), where('negocioId','==',negId), orderBy('createdAt','desc')));
+    const rows = [['Nombre','Telefono','Email','Direccion','Estado','Notas','Fecha']];
+    snap.forEach(d => {
+      const v = d.data();
+      const fecha = v.createdAt ? new Date(v.createdAt.seconds*1000).toLocaleDateString('es-AR') : '';
+      rows.push([
+        (v.nombre||'').replace(/"/g,"'"),
+        v.telefono||'',
+        v.email||'',
+        (v.direccion||'').replace(/"/g,"'"),
+        v.estado||'',
+        (v.notas||'').replace(/"/g,"'"),
+        fecha
+      ]);
+    });
+    const csv = rows.map(r => r.map(x => `"${x}"`).join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+    a.download = 'securepro-clientes-' + new Date().toISOString().split('T')[0] + '.csv';
+    a.click();
+  } catch(e) { logError('exportCSV', e); }
+}
+window.exportarCSV = exportarCSV;
+</script>
+
+<!--
+FIRESTORE SECURITY RULES — Modelo de negocios con roles (owner/editor/viewer)
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function miUsuario() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
+    }
+    function miNegocio() {
+      return miUsuario().negocioId;
+    }
+    function miRol() {
+      return miUsuario().rol;
+    }
+    function estoyAprobado() {
+      return miUsuario().estado == 'aprobado';
+    }
+    function puedoEditar() {
+      return miRol() == 'owner' || miRol() == 'editor';
+    }
+    function puedoBorrar() {
+      return miRol() == 'owner';
+    }
+    function tieneEquipoHabilitado() {
+      return ('features' in miUsuario()) && miUsuario().features.limiteEmpleados > 1;
+    }
+    function esAdmin() {
+      return request.auth.token.email == 'rgaraventa@gmail.com';
+    }
+
+    match /usuarios/{userId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && (
+        esAdmin() ||
+        request.auth.uid == userId ||
+        (estoyAprobado() && miRol() == 'owner' && resource.data.negocioId == miNegocio())
+      );
+      allow delete: if request.auth != null && (
+        esAdmin() ||
+        (estoyAprobado() && miRol() == 'owner' && resource.data.negocioId == miNegocio())
+      );
+    }
+
+    match /negocios/{id} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && (esAdmin() || resource.data.ownerUid == request.auth.uid);
+    }
+
+    match /invitaciones/{id} {
+      allow read: if true;
+      allow create: if request.auth != null && estoyAprobado() && miRol() == 'owner' && tieneEquipoHabilitado();
+      allow update: if request.auth != null; // marcar como usada desde el registro
+    }
+
+    match /clientes/{id} {
+      allow read: if request.auth != null && (esAdmin() || (estoyAprobado() && resource.data.negocioId == miNegocio()));
+      allow create: if request.auth != null && estoyAprobado() && puedoEditar() && request.resource.data.negocioId == miNegocio();
+      allow update: if request.auth != null && (esAdmin() || (estoyAprobado() && puedoEditar() && resource.data.negocioId == miNegocio()));
+      allow delete: if request.auth != null && (esAdmin() || (estoyAprobado() && puedoBorrar() && resource.data.negocioId == miNegocio()));
+    }
+
+    match /presupuestos/{id} {
+      allow read: if request.auth != null && estoyAprobado() && resource.data.negocioId == miNegocio();
+      allow create: if request.auth != null && estoyAprobado() && puedoEditar() && request.resource.data.negocioId == miNegocio();
+      allow update: if request.auth != null && estoyAprobado() && puedoEditar() && resource.data.negocioId == miNegocio();
+      allow delete: if request.auth != null && estoyAprobado() && puedoBorrar() && resource.data.negocioId == miNegocio();
+    }
+
+    match /productos/{id} {
+      allow read: if request.auth != null && estoyAprobado() && resource.data.negocioId == miNegocio();
+      allow create: if request.auth != null && estoyAprobado() && puedoEditar() && request.resource.data.negocioId == miNegocio();
+      allow update: if request.auth != null && estoyAprobado() && puedoEditar() && resource.data.negocioId == miNegocio();
+      allow delete: if request.auth != null && estoyAprobado() && puedoBorrar() && resource.data.negocioId == miNegocio();
+    }
+
+    match /eventos/{id} {
+      allow read: if request.auth != null && estoyAprobado() && resource.data.negocioId == miNegocio();
+      allow create: if request.auth != null && estoyAprobado() && puedoEditar() && request.resource.data.negocioId == miNegocio();
+      allow update: if request.auth != null && estoyAprobado() && puedoEditar() && resource.data.negocioId == miNegocio();
+      allow delete: if request.auth != null && estoyAprobado() && puedoBorrar() && resource.data.negocioId == miNegocio();
+    }
+
+    match /seguimiento/{id} {
+      allow read: if request.auth != null && estoyAprobado() && resource.data.negocioId == miNegocio();
+      allow create: if request.auth != null && estoyAprobado() && puedoEditar() && request.resource.data.negocioId == miNegocio();
+      allow update: if request.auth != null && estoyAprobado() && puedoEditar() && resource.data.negocioId == miNegocio();
+      allow delete: if request.auth != null && estoyAprobado() && puedoBorrar() && resource.data.negocioId == miNegocio();
+    }
+  }
+}
+
+ÍNDICES COMPUESTOS (Firestore > Índices > Compuestos)
+1. clientes      | negocioId ASC, createdAt DESC
+2. presupuestos  | negocioId ASC, createdAt DESC
+3. productos     | negocioId ASC, type ASC
+4. eventos       | negocioId ASC, date ASC
+5. seguimiento   | negocioId ASC (sin índice compuesto necesario, no usa orderBy)
+6. usuarios      | negocioId ASC (para cargar el equipo)
+
+NOTA IMPORTANTE PARA RUBÉN:
+Estas reglas reemplazan completamente a las anteriores (que filtraban por uid).
+Ahora el filtrado es por negocioId, y además controlan en el SERVIDOR (no solo
+en la interfaz) que un viewer no pueda escribir nada y que un editor no pueda
+borrar — así nadie puede saltarse los permisos abriendo la consola del navegador.
+-->
+
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/securepro/sw-securepro.js')
+      .catch(e => console.warn('SW:', e));
+  }
+
+// OFFLINE-FIRST SecurePro
+let estaOnline = navigator.onLine;
+const IDB_SP = 'securepro-offline';
+let idbSP = null;
+
+function abrirIDB() {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(IDB_SP, 1);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      ['clientes_pendientes','presupuestos_pendientes','eventos_pendientes'].forEach(store => {
+        if (!d.objectStoreNames.contains(store))
+          d.createObjectStore(store, { keyPath: 'localId', autoIncrement: true });
+      });
+    };
+    req.onsuccess = e => { idbSP = e.target.result; res(idbSP); };
+    req.onerror = e => rej(e);
+  });
+}
+
+function idbAdd(store, obj) {
+  return new Promise((res, rej) => {
+    const req = idbSP.transaction(store, 'readwrite').objectStore(store).add(obj);
+    req.onsuccess = () => res(req.result);
+    req.onerror = e => rej(e);
+  });
+}
+
+function idbGetAll(store) {
+  return new Promise((res, rej) => {
+    const req = idbSP.transaction(store, 'readonly').objectStore(store).getAll();
+    req.onsuccess = () => res(req.result);
+    req.onerror = e => rej(e);
+  });
+}
+
+function idbDelete(store, key) {
+  return new Promise((res, rej) => {
+    const req = idbSP.transaction(store, 'readwrite').objectStore(store).delete(key);
+    req.onsuccess = () => res();
+    req.onerror = e => rej(e);
+  });
+}
+
+function actualizarBadge() {
+  if (!idbSP) return;
+  Promise.all([
+    idbGetAll('clientes_pendientes'),
+    idbGetAll('presupuestos_pendientes'),
+    idbGetAll('eventos_pendientes')
+  ]).then(results => {
+    const total = results.reduce((s, r) => s + r.length, 0);
+    const box = document.getElementById('offlineBadgeBox');
+    const cnt = document.getElementById('offlineBadgeCount');
+    if (box) box.style.display = total > 0 ? '' : 'none';
+    if (cnt) cnt.textContent = total;
+  });
+}
+
+async function sincronizarPendientes() {
+  if (!idbSP || !estaOnline) return;
+  const uid = auth.currentUser ? auth.currentUser.uid : null;
+  if (!uid) return;
+  let total = 0;
+  for (const [store, col] of [
+    ['clientes_pendientes', 'clientes'],
+    ['presupuestos_pendientes', 'presupuestos'],
+    ['eventos_pendientes', 'eventos']
+  ]) {
+    const items = await idbGetAll(store);
+    for (const item of items) {
+      const localId = item.localId;
+      const data = Object.assign({}, item);
+      delete data.localId;
+      try {
+        await addDoc(collection(db, col), Object.assign({}, data, { createdAt: serverTimestamp() }));
+        await idbDelete(store, localId);
+        total++;
+      } catch(e) { console.error('sync error:', e); }
+    }
+  }
+  if (total > 0) { actualizarBadge(); showToast('Registros sincronizados: ' + total); }
+}
+
+function actualizarEstadoConexion(online) {
+  estaOnline = online;
+  const banner = document.getElementById('offlineBanner');
+  if (banner) banner.style.display = online ? 'none' : 'block';
+  if (online) sincronizarPendientes();
+}
+
+window.addEventListener('online', () => actualizarEstadoConexion(true));
+window.addEventListener('offline', () => actualizarEstadoConexion(false));
+
+function initOffline() {
+  abrirIDB()
+    .then(() => { actualizarEstadoConexion(navigator.onLine); actualizarBadge(); })
+    .catch(e => console.error('IDB error:', e));
+}
+
+// BACKUP SecurePro
+async function generarBackup(silencioso) {
+  const uid = auth.currentUser ? auth.currentUser.uid : null;
+  if (!uid) return;
+  try {
+    const [clientesSnap, presupSnap, eventosSnap, productosSnap, negocioSnap] = await Promise.all([
+      getDocs(query(collection(db, 'clientes'), where('uid', '==', uid))),
+      getDocs(query(collection(db, 'presupuestos'), where('uid', '==', uid))),
+      getDocs(query(collection(db, 'eventos'), where('uid', '==', uid))),
+      getDocs(query(collection(db, 'productos'), where('uid', '==', uid))).catch(() => ({docs:[]})),
+      getDoc(doc(db, 'negocios', uid)).catch(() => ({exists: () => false}))
+    ]);
+    const fecha = new Date().toISOString().slice(0, 10);
+    const backup = {
+      app: 'SecurePro', version: '2.1', fecha: new Date().toISOString(), uid,
+      clientes: clientesSnap.docs.map(d => Object.assign({_id: d.id}, d.data())),
+      presupuestos: presupSnap.docs.map(d => Object.assign({_id: d.id}, d.data())),
+      eventos: eventosSnap.docs.map(d => Object.assign({_id: d.id}, d.data())),
+      productos: productosSnap.docs.map(d => Object.assign({_id: d.id}, d.data())),
+      negocio: negocioSnap.exists() ? negocioSnap.data() : {}
+    };
+    const json = JSON.stringify(backup, null, 2);
+    localStorage.setItem('securepro-ultimo-backup', fecha);
+    const el = document.getElementById('ultimoBackupFecha');
+    if (el) el.textContent = fecha;
+    if (!silencioso) {
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'securepro-backup-' + fecha + '.json'; a.click();
+      URL.revokeObjectURL(url);
+      showToast('Backup descargado');
+    }
+  } catch(e) { console.error('Error backup:', e); if (!silencioso) showToast('Error al generar backup'); }
+}
+
+async function restaurarBackup(input) {
+  const file = input.files[0]; if (!file) return;
+  const uid = auth.currentUser ? auth.currentUser.uid : null;
+  if (!uid) { showToast('Iniciá sesion primero'); return; }
+  if (!confirm('Esto agrega los datos del backup. Continuar?')) { input.value = ''; return; }
+  try {
+    const text = await file.text();
+    const backup = JSON.parse(text);
+    if (backup.app !== 'SecurePro') { showToast('Archivo no es backup de SecurePro'); return; }
+    showToast('Restaurando...');
+    const colMap = { clientes: 'clientes', presupuestos: 'presupuestos', eventos: 'eventos', productos: 'productos' };
+    for (const [key, col] of Object.entries(colMap)) {
+      for (const item of (backup[key] || [])) {
+        const id = item._id; const data = Object.assign({}, item); delete data._id;
+        await setDoc(doc(db, col, id), Object.assign({}, data, { uid }));
+      }
+    }
+    if (backup.negocio && Object.keys(backup.negocio).length > 0) {
+      await setDoc(doc(db, 'negocios', uid), backup.negocio, { merge: true });
+    }
+    showToast('Backup restaurado');
+    input.value = '';
+    setTimeout(() => location.reload(), 1500);
+  } catch(e) { showToast('Error al restaurar: ' + e.message); input.value = ''; }
+}
+
+function chequearBackupDiario() {
+  const hoy = new Date().toISOString().slice(0, 10);
+  const ultimo = localStorage.getItem('securepro-ultimo-backup');
+  const el = document.getElementById('ultimoBackupFecha');
+  if (el && ultimo) el.textContent = ultimo;
+  if (ultimo !== hoy) setTimeout(() => generarBackup(true), 5000);
+}
+
+</script>
+</body>
+</html>
