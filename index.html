@@ -3,7 +3,19 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<!-- SecurePro v2.1 — 2026-07-03 — P1+P2+P3+P5 ROBUSTEZ -->
+<!--
+  SecurePro v2.2 — 2026-07-13
+  NUEVO:
+  - Órdenes de Trabajo (OT): sección nueva en nav, formulario móvil,
+    estados (pendiente/en curso/completada), asignación a técnico,
+    firma digital del cliente (canvas), guardado en Firestore colección "ots"
+  - Aprobación online de presupuesto: botón "🔗 Link aprobación" en vista
+    presupuesto, genera token único, URL pública /aprobar?t=TOKEN,
+    cliente ve resumen y aprueba/rechaza, estado reflejado en lista
+  ─────────────────────────────────────────────────────────────
+  ESTADO ANTERIOR v2.1 (2026-07-03):
+  P1+P2+P3+P5 ROBUSTEZ — presupuestos, clientes, catálogo, agenda, equipo
+-->
 <title>SecurePro</title>
 <meta name="description" content="Sistema de gestión profesional para empresas de seguridad.">
 <meta name="theme-color" content="#1d4ed8">
@@ -480,6 +492,7 @@ body.role-viewer .btn-edit-client{display:none!important}
     <button class="nav-btn active" data-section="dashboard">🏠 Inicio</button>
     <button class="nav-btn" data-section="clientes">👤 Clientes</button>
     <button class="nav-btn" data-section="presupuestos">💰 Presupuestos</button>
+    <button class="nav-btn" data-section="ots">🔧 Órd. Trabajo</button>
     <button class="nav-btn" data-section="catalogo">📦 Catálogo</button>
     <button class="nav-btn" data-section="calendario">📅 Agenda</button>
     <button class="nav-btn" id="nav-equipo" data-section="equipo" style="display:none">👥 Equipo</button>
@@ -509,6 +522,22 @@ body.role-viewer .btn-edit-client{display:none!important}
       <div class="search-wrap"><span class="search-icon">🔍</span><input type="text" id="search-presup" placeholder="Buscar por cliente..."/></div>
       <div id="presup-list"></div>
     </div>
+<!-- ═══ ÓRDENES DE TRABAJO ═══ -->
+    <div class="section" id="section-ots">
+      <div class="sec-header">
+        <span class="sec-title">Órdenes de Trabajo</span>
+        <button class="btn-sm primary" id="btn-new-ot">＋ Nueva OT</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+        <button class="btn-sm ot-filter active" data-otf="todas">Todas</button>
+        <button class="btn-sm ot-filter" data-otf="pendiente">⏳ Pendiente</button>
+        <button class="btn-sm ot-filter" data-otf="en_curso">🔧 En curso</button>
+        <button class="btn-sm ot-filter" data-otf="completada">✅ Completada</button>
+      </div>
+      <div class="search-wrap"><span class="search-icon">🔍</span><input type="text" id="search-ot" placeholder="Buscar por cliente o descripción..."/></div>
+      <div id="ot-list"></div>
+    </div>
+
     <div class="section" id="section-catalogo">
       <div class="sec-header"><span class="sec-title">Catálogo de productos</span><button class="btn-sm primary" id="btn-new-prod">＋ Nuevo</button></div>
       <div class="search-wrap"><span class="search-icon">🔍</span><input type="text" id="search-prod" placeholder="Buscar producto..."/></div>
@@ -736,6 +765,7 @@ body.role-viewer .btn-edit-client{display:none!important}
     <div class="modal-footer" style="flex-wrap:wrap;gap:8px">
       <button class="btn-sm" id="btn-edit-presup">✏️ Editar</button>
       <button class="btn-sm" id="btn-wa-presup">📱 WhatsApp</button>
+      <button class="btn-sm" id="btn-link-presup">🔗 Link aprobación</button>
       <button class="btn-sm gold" id="btn-pdf-presup">🖨 Imprimir PDF</button>
       <button class="btn-sm danger" id="btn-del-presup">🗑 Eliminar</button>
     </div>
@@ -874,6 +904,72 @@ body.role-viewer .btn-edit-client{display:none!important}
 </div>
 
 <div id="toast-wrap"></div>
+
+<!-- ═══ MODAL NUEVA/EDITAR OT ═══ -->
+<div class="modal-overlay" id="modal-ot">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-ot-title">Nueva Orden de Trabajo</span>
+      <button class="modal-close-btn" id="close-ot">✕</button>
+    </div>
+    <input type="hidden" id="ot-id"/>
+    <div class="form-group"><label>Cliente *</label><input type="text" id="ot-client" placeholder="Nombre del cliente"/></div>
+    <div class="form-group"><label>Dirección</label><input type="text" id="ot-address" placeholder="Dirección del servicio"/></div>
+    <div class="form-group"><label>Descripción del trabajo *</label><textarea id="ot-desc" rows="3" placeholder="Describí el trabajo a realizar..." style="resize:vertical"></textarea></div>
+    <div class="form-group"><label>Técnico asignado</label><input type="text" id="ot-tecnico" placeholder="Nombre del técnico"/></div>
+    <div class="form-group"><label>Fecha</label><input type="date" id="ot-date"/></div>
+    <div class="form-group"><label>Estado</label>
+      <select id="ot-estado">
+        <option value="pendiente">⏳ Pendiente</option>
+        <option value="en_curso">🔧 En curso</option>
+        <option value="completada">✅ Completada</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Materiales / observaciones</label><textarea id="ot-materiales" rows="2" placeholder="Materiales usados, notas..." style="resize:vertical"></textarea></div>
+    <div class="form-group" id="firma-section">
+      <label>Firma del cliente (trazá con el dedo)</label>
+      <canvas id="firma-canvas" width="320" height="120" style="border:1px solid var(--border);border-radius:8px;background:#fff;touch-action:none;width:100%;max-width:320px;display:block;margin-top:6px;"></canvas>
+      <div style="display:flex;gap:8px;margin-top:6px;">
+        <button class="btn-sm" id="btn-limpiar-firma">🗑 Limpiar firma</button>
+        <span id="firma-status" style="font-size:12px;color:var(--muted);align-self:center;"></span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sm" id="cancel-ot">Cancelar</button>
+      <button class="btn-sm primary" id="save-ot">Guardar OT</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL VER OT ═══ -->
+<div class="modal-overlay" id="modal-view-ot">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="view-ot-title">Orden de Trabajo</span>
+      <button class="modal-close-btn" id="close-view-ot">✕</button>
+    </div>
+    <div id="view-ot-content"></div>
+    <div class="modal-footer" style="flex-wrap:wrap;gap:8px">
+      <button class="btn-sm" id="btn-edit-ot">✏️ Editar</button>
+      <button class="btn-sm gold" id="btn-print-ot">🖨 Imprimir</button>
+      <button class="btn-sm danger" id="btn-del-ot">🗑 Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL APROBACIÓN PRESUPUESTO (vista pública embebida) ═══ -->
+<div class="modal-overlay" id="modal-aprobar-presup">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">🔗 Link de aprobación</span>
+      <button class="modal-close-btn" id="close-aprobar-presup">✕</button>
+    </div>
+    <div id="aprobar-presup-content" style="padding:8px 0;"></div>
+    <div class="modal-footer">
+      <button class="btn-sm" id="close-aprobar-presup2">Cerrar</button>
+    </div>
+  </div>
+</div>
 
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -1425,6 +1521,7 @@ function showSection(name){
   if(name==="dashboard")renderDashboard();
   else if(name==="clientes")renderClients();
   else if(name==="presupuestos")renderPresupuestos();
+  else if(name==="ots")renderOTs();
   else if(name==="catalogo")renderCatalogo();
   else if(name==="calendario"){renderCalendar();renderEvents();}
   else if(name==="configuracion")loadConfigForm();
@@ -1434,6 +1531,7 @@ document.querySelectorAll(".nav-btn[data-section]").forEach(b=>b.addEventListene
 document.getElementById("main-fab").addEventListener("click",()=>{
   if(currentSection==="clientes")openClientModal();
   else if(currentSection==="presupuestos")openPresupModal();
+  else if(currentSection==="ots")openOTModal();
   else if(currentSection==="catalogo")openProductModal();
   else if(currentSection==="calendario")openEventModal();
 });
@@ -2424,6 +2522,248 @@ function chequearBackupDiario() {
   if (el && ultimo) el.textContent = ultimo;
   if (ultimo !== hoy) setTimeout(() => generarBackup(true), 5000);
 }
+
+/* ═══════════════════════════════════════════════
+   ÓRDENES DE TRABAJO
+═══════════════════════════════════════════════ */
+let ots = {};
+let currentViewOTId = null;
+let firmaDataURL = null;
+let firmaDibujando = false;
+
+async function cargarOTs() {
+  try {
+    const snap = await getDocs(collection(db, 'ots'));
+    ots = {};
+    snap.forEach(d => { ots[d.id] = { id: d.id, ...d.data() }; });
+  } catch(e) { logError('cargarOTs', e); }
+}
+
+function renderOTs() {
+  const q = (document.getElementById('search-ot')?.value || '').toLowerCase();
+  const filtro = document.querySelector('.ot-filter.active')?.dataset.otf || 'todas';
+  let lista = Object.values(ots);
+  if (filtro !== 'todas') lista = lista.filter(o => o.estado === filtro);
+  if (q) lista = lista.filter(o => (o.client||'').toLowerCase().includes(q) || (o.desc||'').toLowerCase().includes(q));
+  lista.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+  const estadoLabel = { pendiente:'⏳ Pendiente', en_curso:'🔧 En curso', completada:'✅ Completada' };
+  const estadoColor = { pendiente:'var(--warn)', en_curso:'var(--blue)', completada:'var(--green)' };
+  const el = document.getElementById('ot-list');
+  el.innerHTML = lista.length === 0
+    ? emptyHTML('🔧','Sin órdenes de trabajo','Tocá + para crear una')
+    : lista.map(o => `
+      <div class="card" data-otid="${o.id}" style="cursor:pointer;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <div style="font-weight:700;font-size:15px;">${sanitizeHTML(o.client||'Sin cliente')}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px;">${sanitizeHTML(o.desc||'').substring(0,80)}</div>
+            ${o.tecnico?`<div style="font-size:12px;color:var(--muted);margin-top:2px;">👷 ${sanitizeHTML(o.tecnico)}</div>`:''}
+          </div>
+          <div style="text-align:right;flex-shrink:0;margin-left:12px;">
+            <span style="background:${estadoColor[o.estado]||'var(--muted)'};color:#fff;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;">${estadoLabel[o.estado]||o.estado}</span>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px;">${o.fecha||''}</div>
+          </div>
+        </div>
+        ${o.firma?'<div style="font-size:11px;color:var(--green);margin-top:6px;">✍️ Firmada por cliente</div>':''}
+      </div>`).join('');
+  el.querySelectorAll('[data-otid]').forEach(card => card.addEventListener('click', () => viewOT(card.dataset.otid)));
+}
+
+function openOTModal(ot = null) {
+  document.getElementById('modal-ot-title').textContent = ot ? 'Editar OT' : 'Nueva Orden de Trabajo';
+  document.getElementById('ot-id').value = ot?.id || '';
+  document.getElementById('ot-client').value = ot?.client || '';
+  document.getElementById('ot-address').value = ot?.address || '';
+  document.getElementById('ot-desc').value = ot?.desc || '';
+  document.getElementById('ot-tecnico').value = ot?.tecnico || '';
+  document.getElementById('ot-date').value = ot?.fecha || new Date().toISOString().split('T')[0];
+  document.getElementById('ot-estado').value = ot?.estado || 'pendiente';
+  document.getElementById('ot-materiales').value = ot?.materiales || '';
+  firmaDataURL = ot?.firma || null;
+  limpiarFirmaCanvas();
+  if (firmaDataURL) {
+    const img = new Image();
+    img.onload = () => { const ctx = document.getElementById('firma-canvas').getContext('2d'); ctx.drawImage(img, 0, 0); };
+    img.src = firmaDataURL;
+    document.getElementById('firma-status').textContent = 'Firma cargada';
+  }
+  openModal('modal-ot');
+}
+
+function limpiarFirmaCanvas() {
+  const canvas = document.getElementById('firma-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  firmaDataURL = null;
+  document.getElementById('firma-status').textContent = '';
+}
+
+function initFirmaCanvas() {
+  const canvas = document.getElementById('firma-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.strokeStyle = '#1d4ed8';
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  const getPos = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const src = e.touches ? e.touches[0] : e;
+    return { x: (src.clientX - rect.left) * (canvas.width / rect.width), y: (src.clientY - rect.top) * (canvas.height / rect.height) };
+  };
+  const start = (e) => { e.preventDefault(); firmaDibujando = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); };
+  const draw = (e) => { e.preventDefault(); if (!firmaDibujando) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); };
+  const end = (e) => { firmaDibujando = false; firmaDataURL = canvas.toDataURL(); document.getElementById('firma-status').textContent = '✅ Firma registrada'; };
+  canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', draw); canvas.addEventListener('mouseup', end);
+  canvas.addEventListener('touchstart', start, { passive: false }); canvas.addEventListener('touchmove', draw, { passive: false }); canvas.addEventListener('touchend', end);
+}
+
+function viewOT(id) {
+  const o = ots[id]; if (!o) return;
+  currentViewOTId = id;
+  const estadoLabel = { pendiente:'⏳ Pendiente', en_curso:'🔧 En curso', completada:'✅ Completada' };
+  document.getElementById('view-ot-title').textContent = 'OT — ' + (o.client || '');
+  document.getElementById('view-ot-content').innerHTML = `
+    <div style="margin-bottom:12px;"><div style="font-size:12px;color:var(--muted)">Estado</div>
+    <div style="font-weight:700;font-size:16px;">${estadoLabel[o.estado]||o.estado}</div></div>
+    <div style="margin-bottom:8px;"><div style="font-size:12px;color:var(--muted)">Cliente</div><div style="font-weight:700;">${sanitizeHTML(o.client||'')}</div></div>
+    ${o.address?`<div style="margin-bottom:8px;"><div style="font-size:12px;color:var(--muted)">Dirección</div><div>${sanitizeHTML(o.address)}</div></div>`:''}
+    <div style="margin-bottom:8px;"><div style="font-size:12px;color:var(--muted)">Descripción</div><div>${sanitizeHTML(o.desc||'')}</div></div>
+    ${o.tecnico?`<div style="margin-bottom:8px;"><div style="font-size:12px;color:var(--muted)">Técnico</div><div>${sanitizeHTML(o.tecnico)}</div></div>`:''}
+    ${o.materiales?`<div style="margin-bottom:8px;"><div style="font-size:12px;color:var(--muted)">Materiales / notas</div><div>${sanitizeHTML(o.materiales)}</div></div>`:''}
+    <div style="margin-bottom:8px;"><div style="font-size:12px;color:var(--muted)">Fecha</div><div>${o.fecha||''}</div></div>
+    ${o.firma?`<div style="margin-top:12px;"><div style="font-size:12px;color:var(--muted);margin-bottom:4px;">Firma del cliente</div><img src="${o.firma}" style="border:1px solid var(--border);border-radius:8px;max-width:100%;"></div>`:'<div style="font-size:12px;color:var(--muted);margin-top:8px;">Sin firma registrada</div>'}
+  `;
+  openModal('modal-view-ot');
+}
+
+document.getElementById('btn-new-ot').addEventListener('click', () => openOTModal());
+document.getElementById('close-ot').addEventListener('click', () => closeModal('modal-ot'));
+document.getElementById('cancel-ot').addEventListener('click', () => closeModal('modal-ot'));
+document.getElementById('close-view-ot').addEventListener('click', () => closeModal('modal-view-ot'));
+document.getElementById('btn-limpiar-firma').addEventListener('click', limpiarFirmaCanvas);
+document.getElementById('btn-edit-ot').addEventListener('click', () => { closeModal('modal-view-ot'); openOTModal(ots[currentViewOTId]); });
+document.getElementById('btn-print-ot').addEventListener('click', () => window.print());
+document.getElementById('btn-del-ot').addEventListener('click', async () => {
+  if (!currentViewOTId || !confirm('¿Eliminar esta OT?')) return;
+  try { await deleteDoc(doc(db, 'ots', currentViewOTId)); delete ots[currentViewOTId]; closeModal('modal-view-ot'); renderOTs(); toast('OT eliminada'); } catch(e) { toast('Error al eliminar', 'err'); }
+});
+document.getElementById('search-ot').addEventListener('input', renderOTs);
+document.querySelectorAll('.ot-filter').forEach(btn => btn.addEventListener('click', () => {
+  document.querySelectorAll('.ot-filter').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderOTs();
+}));
+
+document.getElementById('save-ot').addEventListener('click', async () => {
+  const client = document.getElementById('ot-client').value.trim();
+  const desc = document.getElementById('ot-desc').value.trim();
+  if (!client || !desc) { toast('Cliente y descripción son obligatorios', 'err'); return; }
+  const id = document.getElementById('ot-id').value;
+  const data = {
+    client, desc,
+    address: document.getElementById('ot-address').value.trim(),
+    tecnico: document.getElementById('ot-tecnico').value.trim(),
+    fecha: document.getElementById('ot-date').value,
+    estado: document.getElementById('ot-estado').value,
+    materiales: document.getElementById('ot-materiales').value.trim(),
+    firma: firmaDataURL || null,
+    negocioId, uid: me.uid
+  };
+  const btn = document.getElementById('save-ot'); btn.disabled = true; btn.textContent = 'Guardando...';
+  try {
+    if (id) { await updateDoc(doc(db, 'ots', id), data); ots[id] = { id, ...data }; }
+    else { const ref = await addDoc(collection(db, 'ots'), { ...data, createdAt: serverTimestamp() }); ots[ref.id] = { id: ref.id, ...data }; }
+    closeModal('modal-ot'); toast('OT guardada', 'ok'); renderOTs();
+  } catch(e) { toast('Error al guardar', 'err'); logError('saveOT', e); }
+  btn.disabled = false; btn.textContent = 'Guardar OT';
+});
+
+initFirmaCanvas();
+cargarOTs();
+
+/* ═══════════════════════════════════════════════
+   APROBACIÓN ONLINE DE PRESUPUESTO
+═══════════════════════════════════════════════ */
+document.getElementById('btn-link-presup').addEventListener('click', async () => {
+  const p = presupuestos[currentViewPresupId]; if (!p) return;
+  let token = p.aprobToken;
+  if (!token) {
+    token = Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+    try {
+      await updateDoc(doc(db, 'presupuestos', currentViewPresupId), { aprobToken: token, aprobEstado: 'pendiente' });
+      presupuestos[currentViewPresupId].aprobToken = token;
+      presupuestos[currentViewPresupId].aprobEstado = 'pendiente';
+    } catch(e) { toast('Error generando link', 'err'); return; }
+  }
+  const url = `${location.origin}${location.pathname}?aprobar=${token}`;
+  const estadoAprobMap = { pendiente:'⏳ Pendiente respuesta', aprobado:'✅ Aprobado', rechazado:'❌ Rechazado' };
+  const estadoActual = p.aprobEstado || 'pendiente';
+  document.getElementById('aprobar-presup-content').innerHTML = `
+    <div style="margin-bottom:12px;">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:4px;">Cliente</div>
+      <div style="font-weight:700;">${sanitizeHTML(p.client)}</div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:4px;">Estado aprobación</div>
+      <div style="font-weight:700;">${estadoAprobMap[estadoActual]||estadoActual}</div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:6px;">Link para el cliente</div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:12px;word-break:break-all;">${url}</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn-sm primary" onclick="navigator.clipboard.writeText('${url}').then(()=>toast('Link copiado','ok'))">📋 Copiar link</button>
+      <a class="btn-sm" href="https://wa.me/?text=${encodeURIComponent('Hola, te comparto el presupuesto para tu aprobación: '+url)}" target="_blank" style="text-decoration:none;">📱 Enviar por WhatsApp</a>
+    </div>
+    <div style="margin-top:14px;font-size:12px;color:var(--muted);">El cliente abre el link, ve el resumen y puede Aprobar o Rechazar. El estado se actualiza automáticamente acá.</div>
+  `;
+  openModal('modal-aprobar-presup');
+});
+document.getElementById('close-aprobar-presup').addEventListener('click', () => closeModal('modal-aprobar-presup'));
+document.getElementById('close-aprobar-presup2').addEventListener('click', () => closeModal('modal-aprobar-presup'));
+
+/* Vista pública de aprobación — se activa si URL tiene ?aprobar=TOKEN */
+(async function checkAprobacionPublica() {
+  const params = new URLSearchParams(location.search);
+  const token = params.get('aprobar');
+  if (!token) return;
+  // Buscar presupuesto con ese token
+  try {
+    const snap = await getDocs(collection(db, 'presupuestos'));
+    let presupEncontrado = null;
+    snap.forEach(d => { if (d.data().aprobToken === token) presupEncontrado = { id: d.id, ...d.data() }; });
+    if (!presupEncontrado) { document.body.innerHTML = '<div style="padding:2rem;font-family:Inter,sans-serif;text-align:center;"><h2>Link inválido o expirado</h2></div>'; return; }
+    const p = presupEncontrado;
+    const itemsHTML = (p.items || []).map(item => {
+      const precio = item.precio * (1 + (item.adj || 0) / 100) * item.qty;
+      return `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;"><span>${item.nombre} x${item.qty}</span><strong>$${precio.toLocaleString('es-AR')}</strong></div>`;
+    }).join('');
+    document.body.innerHTML = `
+      <div style="max-width:480px;margin:0 auto;padding:24px;font-family:Inter,sans-serif;">
+        <h2 style="margin-bottom:4px;">Presupuesto</h2>
+        <div style="color:#666;margin-bottom:16px;">Cliente: <strong>${p.client}</strong></div>
+        <div style="background:#f4f6fb;border-radius:12px;padding:16px;margin-bottom:16px;">${itemsHTML}
+          <div style="display:flex;justify-content:space-between;padding-top:12px;font-size:18px;font-weight:800;"><span>Total</span><span>$${(p.total||0).toLocaleString('es-AR')}</span></div>
+        </div>
+        ${p.notes?`<div style="color:#666;margin-bottom:16px;font-size:14px;">${p.notes}</div>`:''}
+        ${p.aprobEstado==='aprobado'?'<div style="background:#dcfce7;padding:16px;border-radius:12px;text-align:center;font-weight:700;color:#16a34a;font-size:18px;">✅ Presupuesto aprobado</div>':
+          p.aprobEstado==='rechazado'?'<div style="background:#fee2e2;padding:16px;border-radius:12px;text-align:center;font-weight:700;color:#dc2626;font-size:18px;">❌ Presupuesto rechazado</div>':`
+          <div style="display:flex;gap:12px;margin-top:8px;">
+            <button onclick="aprobarPresupPublico('${p.id}','aprobado')" style="flex:1;padding:14px;background:#16a34a;color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;">✅ Aprobar</button>
+            <button onclick="aprobarPresupPublico('${p.id}','rechazado')" style="flex:1;padding:14px;background:#dc2626;color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;">❌ Rechazar</button>
+          </div>`}
+      </div>`;
+    window.aprobarPresupPublico = async (id, estado) => {
+      try {
+        await updateDoc(doc(db, 'presupuestos', id), { aprobEstado: estado });
+        document.body.innerHTML = `<div style="max-width:480px;margin:2rem auto;padding:24px;font-family:Inter,sans-serif;text-align:center;">
+          <div style="font-size:48px;margin-bottom:16px;">${estado==='aprobado'?'✅':'❌'}</div>
+          <h2>${estado==='aprobado'?'¡Presupuesto aprobado!':'Presupuesto rechazado'}</h2>
+          <p style="color:#666;margin-top:8px;">Tu respuesta fue registrada. Nos pondremos en contacto a la brevedad.</p>
+        </div>`;
+      } catch(e) { alert('Error al registrar respuesta. Intentá de nuevo.'); }
+    };
+  } catch(e) { console.error('checkAprobacionPublica', e); }
+})();
 
 </script>
 </body>
